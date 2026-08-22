@@ -1,0 +1,33 @@
+# Environment Variables & Secret Credentials
+.env
+.env.local
+.env.*
+*.env
+!.env.example
+*.key
+*.pem
+
+# Python Virtual Environment & Bytecode
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Vector DB & Local Storage
+chroma_db/
+.chroma/
+
+# Uploads & Temp Data
+uploads/*
+!uploads/.gitkeep
+
+# IDE & OS Metadata
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

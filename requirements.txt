@@ -1,0 +1,25 @@
+# Clinical Decision Support RAG System — Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+python-multipart>=0.0.6
+python-dotenv>=1.0.0
+openai>=1.0.0
+google-generativeai>=0.8.0
+
+# PDF Parsing
+PyMuPDF>=1.23.0
+
+# Text Splitting
+langchain-text-splitters>=0.0.1
+
+# Embeddings & Re-ranking
+sentence-transformers>=2.2.0
+transformers>=4.35.0
+torch>=2.0.0
+
+# Vector Store
+chromadb>=0.4.0

@@ -1,0 +1,43 @@
+{
+  "configurations": {
+    "1. Dense Only (BGE-base-en-v1.5)": {
+      "Precision@1": 0.0,
+      "Precision@3": 0.0,
+      "Precision@5": 0.0,
+      "MRR": 0.0,
+      "Avg_Latency_ms": 1919.51,
+      "Faithfulness_Pct": 46.9,
+      "Hallucination_Rate_Pct": 31.2
+    },
+    "2. Sparse Only (BM25Okapi)": {
+      "Precision@1": 0.0,
+      "Precision@3": 0.0,
+      "Precision@5": 0.0,
+      "MRR": 0.0,
+      "Avg_Latency_ms": 0.14,
+      "Faithfulness_Pct": 46.9,
+      "Hallucination_Rate_Pct": 31.2
+    },
+    "3. Hybrid Fusion (Dense + BM25 with RRF k=60)": {
+      "Precision@1": 0.0,
+      "Precision@3": 0.0,
+      "Precision@5": 0.0,
+      "MRR": 0.0,
+      "Avg_Latency_ms": 1761.82,
+      "Faithfulness_Pct": 46.9,
+      "Hallucination_Rate_Pct": 31.2
+    },
+    "4. Full Pipeline: Hybrid + Cross-Encoder Reranking": {
+      "Precision@1": 31.2,
+      "Precision@3": 31.2,
+      "Precision@5": 31.2,
+      "MRR": 0.312,
+      "Avg_Latency_ms": 0.28,
+      "Faithfulness_Pct": 65.6,
+      "Hallucination_Rate_Pct": 0.0
+    }
+  },
+  "test_set_size": 16,
+  "in_domain_count": 11,
+  "ood_count": 5
+}
