@@ -1083,23 +1083,26 @@ Rules:
 
     def _log_audit(self, query: str, response: Dict[str, Any]):
         """Persists clinical query-response interactions to JSONL audit log for governance."""
-        try:
-            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            log_path = os.path.join(base_dir, "clinical_audit_log.jsonl")
-            entry = {
-                "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
-                "query": query,
-                "confidence": response.get("confidence", "high"),
-                "confidence_level": response.get("confidence_level", "HIGH_CONFIDENCE"),
-                "total_ms": response.get("telemetry", {}).get("total_ms", 0.0),
-                "faithfulness_score": response.get("telemetry", {}).get("faithfulness_score", 100.0),
-                "citations_count": len(response.get("citations", [])),
-                "recommendation_snippet": response.get("recommendation", "")[:250],
-            }
-            with open(log_path, "a", encoding="utf-8") as f:
-                f.write(json.dumps(entry) + "\n")
-        except Exception as e:
-            print(f"[Warning] Failed to write audit log: {e}")
+        entry = {
+            "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+            "query": query,
+            "confidence": response.get("confidence", "high"),
+            "confidence_level": response.get("confidence_level", "HIGH_CONFIDENCE"),
+            "total_ms": response.get("telemetry", {}).get("total_ms", 0.0),
+            "faithfulness_score": response.get("telemetry", {}).get("faithfulness_score", 100.0),
+            "citations_count": len(response.get("citations", [])),
+            "recommendation_snippet": response.get("recommendation", "")[:250],
+        }
+        for log_path in [
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "clinical_audit_log.jsonl"),
+            "/tmp/clinical_audit_log.jsonl"
+        ]:
+            try:
+                with open(log_path, "a", encoding="utf-8") as f:
+                    f.write(json.dumps(entry) + "\n")
+                break
+            except Exception:
+                continue
 
     def _calculate_faithfulness(self, recommendation: str, chunks: List[Dict[str, Any]]) -> float:
         """Computes faithfulness score as percentage overlap of clinical terms with retrieved context."""

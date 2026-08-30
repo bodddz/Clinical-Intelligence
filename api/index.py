@@ -16,7 +16,11 @@ if ROOT_DIR not in sys.path:
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
-from backend.main import app
+from backend.main import app, init_pipeline
 
-# Vercel ASGI Application Handler
-# The `app` object is automatically detected and served by Vercel
+# Pre-warm pipeline cache on Vercel cold-boot
+try:
+    init_pipeline()
+except Exception as e:
+    print(f"[Vercel Init] Pre-warm warning: {e}")
+
