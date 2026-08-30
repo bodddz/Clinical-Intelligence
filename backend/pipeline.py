@@ -44,20 +44,33 @@ except ImportError:
     OpenAI = None
     HAS_OPENAI_SDK = False
 
-try:
-    from sentence_transformers import SentenceTransformer, CrossEncoder
-    HAS_SENTENCE_TRANSFORMERS = True
-except ImportError:
-    SentenceTransformer = None
-    CrossEncoder = None
-    HAS_SENTENCE_TRANSFORMERS = False
+SentenceTransformer = None
+CrossEncoder = None
+HAS_SENTENCE_TRANSFORMERS = False
+chromadb = None
+HAS_CHROMADB = False
 
-try:
-    import chromadb
-    HAS_CHROMADB = True
-except ImportError:
-    chromadb = None
-    HAS_CHROMADB = False
+def _try_import_ml():
+    global SentenceTransformer, CrossEncoder, HAS_SENTENCE_TRANSFORMERS, chromadb, HAS_CHROMADB
+    if SentenceTransformer is not None:
+        return
+    try:
+        from sentence_transformers import SentenceTransformer as _ST, CrossEncoder as _CE
+        SentenceTransformer = _ST
+        CrossEncoder = _CE
+        HAS_SENTENCE_TRANSFORMERS = True
+    except Exception:
+        HAS_SENTENCE_TRANSFORMERS = False
+        SentenceTransformer = None
+        CrossEncoder = None
+
+    try:
+        import chromadb as _cdb
+        chromadb = _cdb
+        HAS_CHROMADB = True
+    except Exception:
+        HAS_CHROMADB = False
+        chromadb = None
 
 try:
     from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -557,7 +570,8 @@ Rules:
         self._init_models()
 
     def _init_models(self):
-        if HAS_SENTENCE_TRANSFORMERS:
+        _try_import_ml()
+        if HAS_SENTENCE_TRANSFORMERS and SentenceTransformer is not None:
             try:
                 self.embedder = SentenceTransformer(self.dense_model_name)
             except Exception as e:
@@ -704,6 +718,39 @@ Rules:
                 "is_active": True,
             }
         ]
+
+    def load_preindexed(self, json_path: str):
+        """Loads pre-indexed documents and chunks from a serialized JSON file for instant serverless startup."""
+        with open(json_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        self.indexed_documents = data.get("documents", [])
+        self.all_chunks = data.get("chunks", [])
+        self.bm25 = PurePythonBM25([c["text"] for c in self.all_chunks])
+        if self.embedder and self.collection and self.all_chunks:
+            try:
+                texts_to_embed = [c["text"] for c in self.all_chunks]
+                embeddings = self.embedder.encode(texts_to_embed, show_progress_bar=False)
+                ids = [f"chunk_{i}" for i in range(len(self.all_chunks))]
+                metadatas = [
+                    {
+                        "physical_page": c["physical_page"],
+                        "printed_page": str(c["printed_page"]),
+                        "section": c["section"],
+                        "subsection": c.get("subsection") or "",
+                        "type": c.get("type", "text"),
+                        "table": c.get("table", 0),
+                        "document": c["document"],
+                    }
+                    for c in self.all_chunks
+                ]
+                self.collection.upsert(
+                    ids=ids,
+                    documents=texts_to_embed,
+                    embeddings=embeddings.tolist(),
+                    metadatas=metadatas,
+                )
+            except Exception as exc:
+                print(f"[Warning] Vector collection population from pre-indexed chunks skipped: {exc}")
 
     def add_pdf(self, pdf_path: str, custom_name: Optional[str] = None) -> Dict[str, Any]:
         """Dynamically indexes an additional PDF manuscript into the hybrid store with SHA-256 deduplication."""
@@ -1101,24 +1148,28 @@ Rules:
                 api_key=api_key,
                 base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
             )
-            completion = client.chat.completions.create(
-                model="gemini-1.5-flash",
-                messages=[
-                    {"role": "system", "content": self.GROK_SYSTEM_PROMPT},
-                    {"role": "user", "content": f"Clinical Context:\n{context_str}\n\nClinical Inquiry: {query}"}
-                ],
-                temperature=0.0,
-                max_tokens=4096,
-                response_format={"type": "json_object"}
-            )
-            raw_json = completion.choices[0].message.content
-            parsed = json.loads(raw_json)
-            ans = parsed.get("recommendation") or parsed.get("answer", "")
-            quotes = parsed.get("grounded_quotes") or ([parsed.get("evidence")] if parsed.get("evidence") else [])
-            conf = parsed.get("confidence_level") or ("HIGH_CONFIDENCE" if parsed.get("confidence") == "high" else "MODERATE_CONFIDENCE")
-            nuance = parsed.get("clinical_nuance", "Strong Recommendation")
-            if ans:
-                return ans, quotes, conf, nuance
+            for m_name in ["gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-1.5-flash"]:
+                try:
+                    completion = client.chat.completions.create(
+                        model=m_name,
+                        messages=[
+                            {"role": "system", "content": self.GROK_SYSTEM_PROMPT},
+                            {"role": "user", "content": f"Clinical Context:\n{context_str}\n\nClinical Inquiry: {query}"}
+                        ],
+                        temperature=0.0,
+                        max_tokens=4096,
+                        response_format={"type": "json_object"}
+                    )
+                    raw_json = completion.choices[0].message.content
+                    parsed = json.loads(raw_json)
+                    ans = parsed.get("recommendation") or parsed.get("answer", "")
+                    quotes = parsed.get("grounded_quotes") or ([parsed.get("evidence")] if parsed.get("evidence") else [])
+                    conf = parsed.get("confidence_level") or ("HIGH_CONFIDENCE" if parsed.get("confidence") == "high" else "MODERATE_CONFIDENCE")
+                    nuance = parsed.get("clinical_nuance", "Strong Recommendation")
+                    if ans:
+                        return ans, quotes, conf, nuance
+                except Exception as ex:
+                    continue
 
         return self._synthesize_grounded_evidence(query, chunks)
 

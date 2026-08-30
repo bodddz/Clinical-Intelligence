@@ -64,44 +64,68 @@ async def lifespan(app: FastAPI):
     os.makedirs(data_dir, exist_ok=True)
     os.makedirs(uploads_dir, exist_ok=True)
 
-    # 1. Resolve Primary Baseline PDF
-    pdf_path = os.environ.get("PDF_PATH", "fneur-16-1564680.pdf")
-    if not os.path.isabs(pdf_path):
-        for candidate in [os.path.join(data_dir, pdf_path), os.path.join(base_dir, pdf_path)]:
-            if os.path.exists(candidate):
-                pdf_path = candidate
-                break
-
-    print(f"[Startup] Resolving primary baseline PDF at: {pdf_path}")
-    parser = MedicalPDFParser(pdf_path)
-    parsed_data = parser.parse()
-    print(f"[Startup] Parsed {len(parsed_data['pages'])} pages, {len(parsed_data['tables'])} tables")
-
     pipeline = ClinicalRAGPipeline()
-    pipeline.reset_or_sync_collection()
-    pipeline.process_and_index(parsed_data)
+    preindexed_file = os.path.join(base_dir, "data", "preindexed_chunks.json")
 
-    # 2. Discover and Index all other Research Manuscripts in data/research_papers
-    search_dirs = [data_dir]
-    seen_files = {"fneur-16-1564680.pdf"}
-    discovered_pdfs = []
-
-    for s_dir in search_dirs:
-        if os.path.exists(s_dir):
-            for f in os.listdir(s_dir):
-                if f.lower().endswith(".pdf") and f not in seen_files:
-                    seen_files.add(f)
-                    discovered_pdfs.append((os.path.join(s_dir, f), f))
-
-    print(f"[Startup] Discovered {len(discovered_pdfs)} additional research manuscripts to index...")
-    for full_pdf_path, pdf_file in discovered_pdfs:
+    if os.path.exists(preindexed_file):
+        print(f"[Startup] Fast-boot: Loading pre-indexed research library from: {preindexed_file}")
         try:
-            doc_info = pipeline.add_pdf(full_pdf_path, custom_name=pdf_file)
-            print(f"  + Indexed research paper: {pdf_file} ({doc_info['pages']} pages, {doc_info['chunks_count']} chunks)")
-        except Exception as exc:
-            print(f"  ! Warning: Skipped {pdf_file}: {exc}")
+            pipeline.load_preindexed(preindexed_file)
+            print(f"[Startup] Fast-boot success: {len(pipeline.indexed_documents)} documents ({len(pipeline.all_chunks)} total chunks)")
+        except Exception as err:
+            print(f"[Startup] Warning: Could not fast-boot from preindexed file ({err}), falling back to PDF parsing...")
+            pipeline.indexed_documents = []
+            pipeline.all_chunks = []
 
-    print(f"[Startup] Total indexed research library: {len(pipeline.indexed_documents)} documents ({len(pipeline.all_chunks)} total chunks)")
+    if not pipeline.all_chunks:
+        # 1. Resolve Primary Baseline PDF
+        pdf_path = os.environ.get("PDF_PATH", "fneur-16-1564680.pdf")
+        if not os.path.isabs(pdf_path):
+            for candidate in [os.path.join(data_dir, pdf_path), os.path.join(base_dir, pdf_path)]:
+                if os.path.exists(candidate):
+                    pdf_path = candidate
+                    break
+
+        print(f"[Startup] Resolving primary baseline PDF at: {pdf_path}")
+        parser = MedicalPDFParser(pdf_path)
+        parsed_data = parser.parse()
+        print(f"[Startup] Parsed {len(parsed_data['pages'])} pages, {len(parsed_data['tables'])} tables")
+
+        pipeline.reset_or_sync_collection()
+        pipeline.process_and_index(parsed_data)
+
+        # 2. Discover and Index all other Research Manuscripts in data/research_papers
+        search_dirs = [data_dir]
+        seen_files = {"fneur-16-1564680.pdf"}
+        discovered_pdfs = []
+
+        for s_dir in search_dirs:
+            if os.path.exists(s_dir):
+                for f in os.listdir(s_dir):
+                    if f.lower().endswith(".pdf") and f not in seen_files:
+                        seen_files.add(f)
+                        discovered_pdfs.append((os.path.join(s_dir, f), f))
+
+        print(f"[Startup] Discovered {len(discovered_pdfs)} additional research manuscripts to index...")
+        for full_pdf_path, pdf_file in discovered_pdfs:
+            try:
+                doc_info = pipeline.add_pdf(full_pdf_path, custom_name=pdf_file)
+                print(f"  + Indexed research paper: {pdf_file} ({doc_info['pages']} pages, {doc_info['chunks_count']} chunks)")
+            except Exception as exc:
+                print(f"  ! Warning: Skipped {pdf_file}: {exc}")
+
+        print(f"[Startup] Total indexed research library: {len(pipeline.indexed_documents)} documents ({len(pipeline.all_chunks)} total chunks)")
+
+        # Cache preindexed JSON for future fast-boot
+        try:
+            with open(preindexed_file, "w", encoding="utf-8") as out_f:
+                json.dump({
+                    "documents": pipeline.indexed_documents,
+                    "chunks": pipeline.all_chunks
+                }, out_f, ensure_ascii=False, indent=2)
+            print(f"[Startup] Saved pre-indexed cache to {preindexed_file}")
+        except Exception as exc:
+            print(f"[Startup] Notice: Could not write cache file: {exc}")
 
     # 3. Initialize Realistic Empirical Benchmark Baseline
     benchmark_cache = {
@@ -208,6 +232,20 @@ async def get_documents_endpoint():
     if not pipeline:
         raise HTTPException(status_code=503, detail="Pipeline not initialized")
     return {"documents": pipeline.indexed_documents, "total_chunks": len(pipeline.all_chunks)}
+
+
+@app.get("/api/dump-cache")
+async def dump_cache_endpoint():
+    """Internal cache serializer for instant deployment packaging."""
+    if not pipeline:
+        raise HTTPException(status_code=503, detail="Pipeline not initialized")
+    preindexed_file = os.path.join(BASE_DIR, "data", "preindexed_chunks.json")
+    with open(preindexed_file, "w", encoding="utf-8") as f:
+        json.dump({
+            "documents": pipeline.indexed_documents,
+            "chunks": pipeline.all_chunks
+        }, f, ensure_ascii=False, indent=2)
+    return {"status": "SUCCESS", "documents": len(pipeline.indexed_documents), "total_chunks": len(pipeline.all_chunks), "path": preindexed_file}
 
 
 @app.post("/api/upload-pdf")

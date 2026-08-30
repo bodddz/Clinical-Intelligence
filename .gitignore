@@ -31,3 +31,7 @@ uploads/*
 .DS_Store
 Thumbs.db
 *.log
+scratch/
+clinical_audit_log.jsonl
+CTRL ALT CURE/
+

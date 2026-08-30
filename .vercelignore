@@ -1,0 +1,9 @@
+.venv
+__pycache__
+*.pyc
+.git
+.gitignore
+archive/
+scratch/
+clinical_audit_log.jsonl
+*.log
