@@ -19,24 +19,28 @@
         <!-- ── AMBIENT DEEP GLOW ── -->
         <div class="ambient-glow"></div>
 
-        <!-- ── FLOATING CORNER MICRO-CONTROLS (ZERO TOP BAR) ── -->
-        <div class="floating-corner-top-left">
-            <button id="sidebarToggleBtn" class="floating-icon-btn" title="Toggle Clinical Workspace Sidebar (Drawer)">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="3" y1="12" x2="21" y2="12"></line>
-                    <line x1="3" y1="6" x2="21" y2="6"></line>
-                    <line x1="3" y1="18" x2="21" y2="18"></line>
-                </svg>
-            </button>
-            <span class="workspace-brand-tag">Clinical Intelligence</span>
-        </div>
+        <div class="ambient-glow"></div>
 
-        <div class="floating-corner-top-right">
-            <div class="live-grounding-pill" title="Active Knowledge Base (N=235 Cohort)">
-                <span class="pulse-dot"></span>
-                <span class="grounding-text">Active Knowledge Base (N=235 Cohort)</span>
+        <!-- ── UNIFIED FIXED TOP NAVIGATION BAR (Z-50) ── -->
+        <header class="top-navbar">
+            <div class="navbar-left">
+                <button id="sidebarToggleBtn" class="floating-icon-btn" title="Toggle Clinical Workspace Sidebar (Drawer)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <span class="workspace-brand-tag">Clinical Intelligence</span>
             </div>
-        </div>
+
+            <div class="navbar-right">
+                <div class="live-grounding-pill" title="Active Knowledge Base (N=235 Cohort)">
+                    <span class="pulse-dot"></span>
+                    <span class="grounding-text">Active Knowledge Base (N=235 Cohort)</span>
+                </div>
+            </div>
+        </header>
 
         <!-- ── COLLAPSIBLE CLINICAL SIDEBAR (SLIDE-OVER DRAWER) ── -->
         <aside id="clinicalSidebar" class="clinical-drawer">
@@ -114,9 +118,9 @@
         </aside>
 
         <!-- ── MAIN ZERO-CLUTTER WORKSPACE ── -->
-        <main class="workspace-viewport">
+        <main id="workspaceViewport" class="workspace-viewport idle-state">
             <div class="conversational-canvas">
-                <!-- ── ZERO-CLUTTER EDITORIAL HERO ── -->
+                <!-- ── ZERO-CLUTTER EDITORIAL HERO (CENTERED IN IDLE STATE) ── -->
                 <div class="hero hero-editorial-panel" id="hero">
                     <div class="hero-greeting dynamic-time-tracker" id="time-greeting">GOOD MORNING, DOCTOR.</div>
                     <h1 class="hero-headline">How can I assist with the epilepsy cohort evidence today?</h1>

@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
         drawerBenchScore: getEl("drawerBenchScore"),
         dynamicTimeTracker: getEl("time-greeting") || getEl("dynamicTimeTracker"),
         heroGreeting: getEl("hero") || getEl("heroGreeting"),
+        workspaceViewport: getEl("workspaceViewport") || document.querySelector(".workspace-viewport"),
         conversationStream: getEl("conversationStream"),
         retrievalLoader: getEl("retrievalLoader"),
         queryForm: getEl("queryForm"),
@@ -176,6 +177,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (els.heroGreeting) {
                 els.heroGreeting.classList.remove("collapsed");
             }
+            if (els.workspaceViewport) {
+                els.workspaceViewport.classList.add("idle-state");
+            }
             if (els.clinicalSidebar) {
                 els.clinicalSidebar.classList.remove("open");
             }
@@ -183,7 +187,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 els.clinicalQueryInput.value = "";
                 els.clinicalQueryInput.focus();
             }
-            showToast("New clinical session started (History reset).");
         });
     }
 
@@ -206,10 +209,24 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function restoreChatStreamUI() {
-        if (!chatStream || chatStream.length === 0) return;
+        if (!chatStream || chatStream.length === 0) {
+            if (els.heroGreeting) {
+                els.heroGreeting.classList.remove("collapsed");
+            }
+            if (els.workspaceViewport) {
+                els.workspaceViewport.classList.add("idle-state");
+            }
+            if (els.conversationStream) {
+                els.conversationStream.hidden = true;
+            }
+            return;
+        }
 
         if (els.heroGreeting) {
             els.heroGreeting.classList.add("collapsed");
+        }
+        if (els.workspaceViewport) {
+            els.workspaceViewport.classList.remove("idle-state");
         }
         if (els.conversationStream) {
             els.conversationStream.hidden = false;
@@ -428,9 +445,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ── QUERY EXECUTION WITH GEMINI SHIMMER LOADER & PERSISTENCE ──
     async function executeClinicalQuery(queryText, isReplay = false, replayData = null) {
-        // Transition hero greeting
+        // Transition hero greeting & remove idle-state
         if (els.heroGreeting) {
             els.heroGreeting.classList.add("collapsed");
+        }
+        if (els.workspaceViewport) {
+            els.workspaceViewport.classList.remove("idle-state");
         }
         if (els.conversationStream) {
             els.conversationStream.hidden = false;
