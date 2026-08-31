@@ -22,7 +22,6 @@ document.addEventListener("DOMContentLoaded", () => {
         activeChunkCountBadge: getEl("activeChunkCountBadge"),
         auditCount: getEl("auditCount"),
         exportAuditBtn: getEl("exportAuditBtn"),
-        clearAuditBtn: getEl("clearAuditBtn"),
         auditHistoryList: getEl("auditHistoryList"),
         openBenchmarkModalBtn: getEl("openBenchmarkModalBtn"),
         drawerBenchScore: getEl("drawerBenchScore"),
@@ -342,36 +341,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ── AUDIT ACTIONS ──
-    function clearAuditTrail(e) {
-        if (e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        // 1. Clear state array
-        auditHistory = [];
-
-        // 2. Remove & reset items in localStorage
-        try {
-            localStorage.removeItem(AUDIT_STORAGE_KEY);
-            localStorage.removeItem("cdss_audit_trail");
-            localStorage.setItem(AUDIT_STORAGE_KEY, JSON.stringify([]));
-            localStorage.setItem("cdss_audit_trail", JSON.stringify([]));
-        } catch (err) {
-            console.error("[Storage Clear Error]", err);
-        }
-
-        // 3. Reset counter badge & 4. Immediately render empty state placeholder
-        updateAuditSidebarUI();
-
-        showToast("Audit trail cleared.");
-    }
-
-    if (els.clearAuditBtn) {
-        els.clearAuditBtn.removeAttribute("disabled");
-        els.clearAuditBtn.addEventListener("click", clearAuditTrail);
-    }
-
+    // ── AUDIT EXPORT (IMMUTABLE GOVERNANCE TRAIL) ──
     if (els.exportAuditBtn) {
         els.exportAuditBtn.addEventListener("click", exportAuditJSON);
     }
@@ -888,10 +858,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ── AUDIT HISTORY PERSISTENCE ──
+    // ── IMMUTABLE AUDIT TRAIL PERSISTENCE ──
     function loadAuditHistory() {
         try {
-            const raw = localStorage.getItem(AUDIT_STORAGE_KEY);
+            const raw = localStorage.getItem(AUDIT_STORAGE_KEY) || localStorage.getItem("cdss_audit_trail");
             return raw ? JSON.parse(raw) : [];
         } catch {
             return [];
@@ -900,9 +870,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function saveAuditHistory() {
         try {
-            localStorage.setItem(AUDIT_STORAGE_KEY, JSON.stringify(auditHistory.slice(0, 50)));
+            const serialized = JSON.stringify(auditHistory.slice(0, 100));
+            localStorage.setItem(AUDIT_STORAGE_KEY, serialized);
+            localStorage.setItem("cdss_audit_trail", serialized);
         } catch (err) {
-            console.error("[Storage Error]", err);
+            console.error("[Audit Storage Error]", err);
         }
     }
 
@@ -911,12 +883,12 @@ document.addEventListener("DOMContentLoaded", () => {
             id: Date.now().toString(),
             query: queryText,
             timestamp: new Date().toLocaleTimeString(),
-            confidence: responseData.confidence_level,
+            confidence: responseData.confidence_level || responseData.confidence,
             latency: responseData.telemetry ? responseData.telemetry.total_ms : 0.0,
             response: responseData,
         };
         auditHistory.unshift(item);
-        if (auditHistory.length > 50) auditHistory.pop();
+        if (auditHistory.length > 100) auditHistory.pop();
         saveAuditHistory();
         updateAuditSidebarUI();
     }
@@ -925,8 +897,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (els.auditCount) els.auditCount.textContent = auditHistory.length;
         if (!els.auditHistoryList) return;
 
-        if (auditHistory.length === 0) {
-            els.auditHistoryList.innerHTML = `<div class="audit-empty-text">No queries recorded in this session.</div>`;
+        if (!auditHistory || auditHistory.length === 0) {
+            els.auditHistoryList.innerHTML = `<div class="audit-empty-text">No queries recorded yet.</div>`;
             return;
         }
 
