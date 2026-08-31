@@ -2,21 +2,21 @@
 Clinical Decision Support System — Clinical Safety Guardrails (Gates -1, 0, 1, 2, 3)
 ================================================================================
 Comprehensive guardrail engine ensuring:
-  - Gate -1: Sub-0.5ms Deterministic Intent & Small-Talk Router
+  - Gate -1: Sub-0.5ms Deterministic Intent, Name, Small-Talk & Non-Clinical Noise Router
   - Gate 0: Clinical Ambiguity Detection & Comparative Cohort Breakdown
-  - Gate 1: Cross-Encoder Relevance Cutoff (< -1.0)
+  - Gate 1: Cross-Encoder Relevance & Confidence Calibration Cutoff
   - Gate 2: Personal Trauma, Acute Emergency, Endocrinology/Lab Panels & General Medicine OOD Gate
   - Gate 3: Cohort Statistical Integrity Guardrail (PWE vs PWNE)
 """
 
 import re
-from typing import Dict, Any, Optional, Tuple, List
+from typing import Dict, Any, Optional, Tuple, List, Set
 
 
 class ConversationalIntentRouter:
     """
     Gate -1: Sub-millisecond Regex & Pattern Router for conversational greetings,
-    state-of-health inquiries, capabilities, and malformed inputs.
+    arbitrary person names, state-of-health inquiries, capabilities, and malformed/non-clinical inputs.
     """
 
     GREETING_PATTERNS = [
@@ -32,7 +32,7 @@ class ConversationalIntentRouter:
     ]
 
     CAPABILITY_PATTERNS = [
-        re.compile(r"^\s*(what\s+can\s+you\s+do|capabilities|help|who\s+are\s+you|what\s+is\s+this\s+system)\b", re.IGNORECASE),
+        re.compile(r"^\s*(what\s+can\s+you\s+do|capabilities|help|who\s+are\s+you|what\s+is\s+this\s+system|tell\s+me\s+about\s+yourself)\b", re.IGNORECASE),
         re.compile(r"^\s*(ماذا\s+تستطيع\s+أن\s+تفعل|من\s+أنت|مساعدة|ما\s+هو\s+هذا\s+النظام)\b", re.IGNORECASE),
     ]
 
@@ -46,7 +46,40 @@ class ConversationalIntentRouter:
         re.compile(r"\b(انسى\s+التعليمات|تجاهل\s+(الشروط|التعليمات|القواعد)|اتصرف\s+كأنك|تظاهر\s+بأنك)\b", re.IGNORECASE),
     ]
 
+    # Non-Clinical Conversational Noise & Person Names
+    PERSON_OR_CASUAL_PATTERNS = [
+        re.compile(r"^\s*(my\s+name\s+is|i\s+am|call\s+me|who\s+is)\s+([a-zA-Z]+)\s*$", re.IGNORECASE),
+        re.compile(r"^\s*(nour|mina|ahmed|john|sarah|omar|mohamed|alex|youssef|fatima|mariam|david|ali|michael|peter|hassan|hany|george|mark|sam|adam)\s*$", re.IGNORECASE),
+        re.compile(r"^\s*(نور|مينا|احمد|أحمد|محمد|سارة|ساره|عمر|يوسف|فاطمة|مريم|علي|حسن|هاني|جورج|مارك|سام|ادم|آدم)\s*$", re.IGNORECASE),
+        re.compile(r"^\s*(test|testing|ping|echo|admin|user|doctor|doc|ok|okay|cool|sure|fine|nice|wow|lol|haha|tell\s+me|tell\s+me\s+more|can\s+you\s+hear\s+me|try|sample)\s*$", re.IGNORECASE),
+        re.compile(r"^\s*(what\s+is\s+the\s+weather|tell\s+me\s+a\s+joke|tell\s+me\s+a\s+story|write\s+a\s+poem|who\s+won|capital\s+of)\b", re.IGNORECASE),
+    ]
+
     GIBBERISH_REGEX = re.compile(r"^[b-df-hj-np-tv-z0-9!@#$%^&*()_+={}\[\]:;\"'<>,.?/~`\\|-]{7,}$", re.IGNORECASE)
+
+    # Core Clinical & Medical Keywords required for full vector search
+    CLINICAL_INTENT_KEYWORDS: Set[str] = {
+        "seizure", "seizures", "epilepsy", "epileptic", "epileptiform", "epileptogenic",
+        "pwe", "pwne", "first-seizure", "unprovoked", "provoked", "acute symptomatic",
+        "eeg", "electroencephalogram", "ied", "ieds", "interictal", "spike", "sharp",
+        "mri", "ct", "neuroimaging", "imaging", "lesion", "lesions", "structural",
+        "biomarker", "biomarkers", "etiology", "etiologies", "etiological",
+        "asm", "asms", "aed", "aeds", "antiseizure", "anticonvulsant", "medication", "medications",
+        "monotherapy", "polytherapy", "levetiracetam", "lamotrigine", "valproate", "carbamazepine",
+        "lacosamide", "oxcarbazepine", "phenytoin", "topiramate", "clobazam", "zonisamide",
+        "treatment", "therapy", "initiation", "defer", "deferral", "withdrawal", "dose", "dosing",
+        "recurrence", "relapse", "remission", "prognosis", "hazard", "hazard ratio", "risk",
+        "mortality", "sudep", "status epilepticus", "intractable", "refractory",
+        "cohort", "population", "demographic", "demographics", "baseline", "characteristic",
+        "characteristics", "table 1", "table 2", "table 3", "table 4", "patient", "patients",
+        "nice", "ilae", "aes", "aan", "guideline", "guidelines", "protocol", "recommendation",
+        "neonatal", "infant", "pediatric", "childhood", "elderly", "adult", "unprovoked seizure",
+        "rate", "percentage", "proportion", "prevalence", "incidence", "follow-up", "follow up"
+    }
+
+    KNOWN_CLINICAL_ACRONYMS: Set[str] = {
+        "EEG", "MRI", "ASM", "ASMS", "AED", "AEDS", "IED", "IEDS", "CT", "ILAE", "PWE", "PWNE", "SUDEP", "NICE", "AES", "AAN"
+    }
 
     @classmethod
     def _is_gibberish(cls, text: str) -> bool:
@@ -54,7 +87,7 @@ class ConversationalIntentRouter:
         if len(t) <= 2:
             return False
         # Known clinical abbreviations
-        if t.upper() in ["EEG", "MRI", "ASM", "ASMS", "AED", "AEDS", "IED", "IEDS", "CT", "ILAE", "PWE", "PWNE", "SUDEP"]:
+        if t.upper() in cls.KNOWN_CLINICAL_ACRONYMS:
             return False
         # If string contains Arabic characters, it is not gibberish
         if re.search(r"[\u0600-\u06FF]", t):
@@ -72,12 +105,31 @@ class ConversationalIntentRouter:
         return False
 
     @classmethod
+    def _has_clinical_intent(cls, text: str) -> bool:
+        """
+        Checks if the input text contains recognizable clinical or epilepsy-specific keywords/acronyms.
+        """
+        words = re.findall(r"\b[a-zA-Z0-9_\-]+\b", text)
+        for w in words:
+            if w.upper() in cls.KNOWN_CLINICAL_ACRONYMS:
+                return True
+            if w.lower() in cls.CLINICAL_INTENT_KEYWORDS:
+                return True
+        # Check Arabic medical terms
+        arabic_medical = ["صرع", "تشنج", "تشنجات", "نوبة", "نوبات", "رسم مخ", "اشعة", "رنين", "مقطعية", "علاج", "دواء", "مريض", "مرضى"]
+        if any(w in text for w in arabic_medical):
+            return True
+        return False
+
+    @classmethod
     def route_intent(cls, query: str) -> Optional[Dict[str, Any]]:
         """
-        Evaluates input query against Gate -0.5 (Prompt Injection) and Gate -1 (Small Talk / Intent).
+        Evaluates input query against Gate -0.5 (Prompt Injection) and Gate -1 (Small Talk / Casual Names / Non-Clinical Noise).
         Returns instant response dict if matched, or None if clinical RAG retrieval should proceed.
         """
         q = query.strip()
+        if not q:
+            return None
 
         # Gate -0.5: Prompt Injection & Adversarial Defense Check
         for pattern in cls.PROMPT_INJECTION_PATTERNS:
@@ -106,29 +158,6 @@ class ConversationalIntentRouter:
                         "cache_hit": False
                     },
                 }
-
-        if not q or len(q) <= 2:
-            greeting_text = "Hello, Doctor. I am your Clinical Decision Support Assistant indexed on the prospective first-seizure cohort (N=235). I am ready to evaluate seizure recurrence risks, EEG biomarkers, or ASM protocols. How can I assist your clinical workflow?"
-            return {
-                "answer": greeting_text,
-                "recommendation": greeting_text,
-                "evidence": "",
-                "confidence_level": "HIGH_CONFIDENCE",
-                "confidence": "high",
-                "clinical_nuance": "Clinical Assistance",
-                "grounded_quotes": [],
-                "metadata": [],
-                "citations": [],
-                "telemetry": {
-                    "intent_gate_ms": 0.3,
-                    "hybrid_retrieval_ms": 0.0,
-                    "cross_encoder_ms": 0.0,
-                    "synthesis_ms": 0.0,
-                    "total_ms": 0.3,
-                    "faithfulness_score": 100.0,
-                    "cache_hit": True
-                },
-            }
 
         # Check Gibberish / Malformed Input
         if cls._is_gibberish(q) or cls.GIBBERISH_REGEX.match(q):
@@ -161,7 +190,11 @@ class ConversationalIntentRouter:
         # Check Greetings & State of Health
         for pattern in cls.GREETING_PATTERNS:
             if pattern.search(q):
-                greeting_text = "Hello, Doctor. I am your Clinical Decision Support Assistant indexed on the prospective first-seizure cohort (N=235). I am ready to evaluate seizure recurrence risks, EEG biomarkers, or ASM protocols. How can I assist your clinical workflow?"
+                greeting_text = (
+                    "Hello, Doctor. I am your Clinical Decision Support Assistant indexed on the prospective first-seizure cohort (N=235) "
+                    "and international epilepsy guidelines. I am ready to evaluate seizure recurrence risks, EEG biomarkers, or ASM protocols. "
+                    "How can I assist your clinical workflow?"
+                )
                 return {
                     "answer": greeting_text,
                     "recommendation": greeting_text,
@@ -183,7 +216,7 @@ class ConversationalIntentRouter:
                     },
                 }
 
-        # Check Capabilities
+        # Check Capabilities / Identity
         for pattern in cls.CAPABILITY_PATTERNS:
             if pattern.search(q):
                 cap_text = (
@@ -215,6 +248,67 @@ class ConversationalIntentRouter:
                         "cache_hit": True
                     },
                 }
+
+        # Check Person Names & Casual Conversational Noise
+        for pattern in cls.PERSON_OR_CASUAL_PATTERNS:
+            if pattern.search(q):
+                guidance_msg = (
+                    "Hello, Doctor. I am your Clinical Decision Support Assistant indexed on the prospective first-seizure cohort (N=235) "
+                    "and indexed international epilepsy guidelines.\n\n"
+                    "Please ask a clinical question regarding:\n"
+                    "• **Cohort Stratification:** Patients With Epilepsy (PWE, N=146) vs. Patients Without Epilepsy (PWNE, N=89)\n"
+                    "• **Recurrence Risks & Prognosis:** 1-year seizure recurrence rates, hazard ratios, and biomarker correlations\n"
+                    "• **Diagnostic Workup:** Routine EEG findings, IED identification (33.6%), and CT/MRI imaging abnormalities (49.3%)\n"
+                    "• **Antiseizure Medication (ASM):** Immediate initiation vs. deferred therapy and prescription protocols."
+                )
+                return {
+                    "answer": guidance_msg,
+                    "recommendation": guidance_msg,
+                    "evidence": "",
+                    "confidence_level": "SAFE_REFUSAL",
+                    "confidence": "insufficient",
+                    "clinical_nuance": "Clinical Assistance",
+                    "grounded_quotes": [],
+                    "metadata": [],
+                    "citations": [],
+                    "telemetry": {
+                        "intent_gate_ms": 0.3,
+                        "hybrid_retrieval_ms": 0.0,
+                        "cross_encoder_ms": 0.0,
+                        "synthesis_ms": 0.0,
+                        "total_ms": 0.3,
+                        "faithfulness_score": 100.0,
+                        "cache_hit": True
+                    },
+                }
+
+        # Single word or very short queries lacking any clinical intent
+        words = re.findall(r"\b[a-zA-Z0-9_\-\u0600-\u06FF]+\b", q)
+        if len(words) <= 2 and not cls._has_clinical_intent(q):
+            guidance_msg = (
+                "Hello, Doctor. I am your Clinical Decision Support Assistant for epilepsy cohorts and clinical guidelines. "
+                "The input appears to be non-clinical. Please submit a specific inquiry regarding seizure recurrence, EEG/MRI findings, or ASM protocols."
+            )
+            return {
+                "answer": guidance_msg,
+                "recommendation": guidance_msg,
+                "evidence": "",
+                "confidence_level": "SAFE_REFUSAL",
+                "confidence": "insufficient",
+                "clinical_nuance": "Clinical Assistance",
+                "grounded_quotes": [],
+                "metadata": [],
+                "citations": [],
+                "telemetry": {
+                    "intent_gate_ms": 0.3,
+                    "hybrid_retrieval_ms": 0.0,
+                    "cross_encoder_ms": 0.0,
+                    "synthesis_ms": 0.0,
+                    "total_ms": 0.3,
+                    "faithfulness_score": 100.0,
+                    "cache_hit": True
+                },
+            }
 
         return None
 
@@ -294,16 +388,9 @@ class SafetyGateRouter:
                     "Please consult clinical laboratory reference guidelines, emergency triage, or a specialist."
                 )
 
-        # Gate 1: Relevance Cutoff (Calibrated with In-Domain Clinical Keyword Awareness)
-        in_domain_keywords = [
-            "demographic", "demographics", "characteristic", "characteristics", "cohort", "patient", "patients",
-            "seizure", "seizures", "epilepsy", "pwne", "pwe", "asm", "asms", "aed", "aeds", "ied", "ieds",
-            "eeg", "mri", "ct", "recurrence", "relapse", "etiology", "mortality", "guideline", "guidelines",
-            "treatment", "unprovoked", "status epilepticus", "biomarker", "sudep"
-        ]
-        q_lower = query.lower()
-        has_domain_kw = any(kw in q_lower for kw in in_domain_keywords)
-        effective_cutoff = -4.0 if has_domain_kw else -1.0
+        # Gate 1: Relevance Cutoff & Confidence Calibration
+        has_domain_kw = ConversationalIntentRouter._has_clinical_intent(query)
+        effective_cutoff = -4.0 if has_domain_kw else -0.5
 
         if top_retrieval_score < effective_cutoff:
             return (
@@ -312,7 +399,7 @@ class SafetyGateRouter:
                 "Observational Finding",
                 "I couldn't find enough information in the indexed clinical manuscripts to answer this query with clinical confidence. "
                 f"The retrieval relevance score ({top_retrieval_score:.2f}) fell below the minimum threshold ({effective_cutoff:.1f}). This system searches the first-seizure cohort study (N=235) "
-                "and any uploaded epilepsy guidelines. Please try rephrasing your query or uploading an additional relevant guideline PDF."
+                "and any uploaded epilepsy guidelines. Please try rephrasing your query with specific clinical terms regarding seizure recurrence, EEG findings, or ASM therapy."
             )
 
         return (False, "HIGH_CONFIDENCE", "Strong Recommendation", "")
