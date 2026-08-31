@@ -56,6 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
         pdfViewerExternalLink: getEl("pdfViewerExternalLink"),
         inlinePdfFrame: getEl("inlinePdfFrame"),
         pdfLoadingSpinner: getEl("pdfLoadingSpinner"),
+        scrollAnchor: getEl("scrollAnchor"),
     };
 
     // ── STATE & PERSISTENCE KEYS ──
@@ -977,12 +978,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ── AUTO-SCROLL UTILITY ──
     function scrollToBottom() {
-        setTimeout(() => {
-            window.scrollTo({
-                top: document.documentElement.scrollHeight || document.body.scrollHeight,
-                behavior: "smooth"
-            });
-        }, 50);
+        requestAnimationFrame(() => {
+            // Use scroll anchor element for precise targeting
+            if (els.scrollAnchor) {
+                els.scrollAnchor.scrollIntoView({ behavior: "smooth", block: "end" });
+            } else {
+                // Fallback: scroll entire page
+                window.scrollTo({
+                    top: document.documentElement.scrollHeight || document.body.scrollHeight,
+                    behavior: "smooth"
+                });
+            }
+        });
     }
 
     function escapeHtml(str) {
