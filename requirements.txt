@@ -1,12 +1,9 @@
-# Clinical Decision Support RAG System — Vercel & Production Serverless Dependencies
-fastapi>=0.104.0
-uvicorn[standard]>=0.24.0
-pydantic>=2.0.0
-python-multipart>=0.0.6
-python-dotenv>=1.0.0
-openai>=1.0.0
-google-generativeai>=0.8.0
-PyMuPDF>=1.23.0
-langchain-text-splitters>=0.0.1
-requests>=2.28.0
-numpy>=1.24.0
+fastapi
+uvicorn
+pydantic
+python-dotenv
+requests
+numpy
+pymupdf
+google-generativeai
+openai
