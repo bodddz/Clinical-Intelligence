@@ -458,25 +458,25 @@ async def serve_pdf_by_name(filename: str):
 
 @app.get("/")
 async def serve_index():
-    index_path = os.path.join(FRONTEND_DIR, "index.html")
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
+    for candidate in [os.path.join(FRONTEND_DIR, "index.html"), os.path.join(BASE_DIR, "public", "index.html"), os.path.join(BASE_DIR, "index.html")]:
+        if os.path.exists(candidate):
+            return FileResponse(candidate)
     raise HTTPException(status_code=404, detail="Frontend index.html not found")
 
 
 @app.get("/style.css")
 async def serve_css():
-    css_path = os.path.join(FRONTEND_DIR, "style.css")
-    if os.path.exists(css_path):
-        return FileResponse(css_path, media_type="text/css")
+    for candidate in [os.path.join(FRONTEND_DIR, "style.css"), os.path.join(BASE_DIR, "public", "style.css")]:
+        if os.path.exists(candidate):
+            return FileResponse(candidate, media_type="text/css")
     raise HTTPException(status_code=404, detail="style.css not found")
 
 
 @app.get("/app.js")
 async def serve_js():
-    js_path = os.path.join(FRONTEND_DIR, "app.js")
-    if os.path.exists(js_path):
-        return FileResponse(js_path, media_type="application/javascript")
+    for candidate in [os.path.join(FRONTEND_DIR, "app.js"), os.path.join(BASE_DIR, "public", "app.js")]:
+        if os.path.exists(candidate):
+            return FileResponse(candidate, media_type="application/javascript")
     raise HTTPException(status_code=404, detail="app.js not found")
 
 
