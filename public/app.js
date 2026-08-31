@@ -1,7 +1,7 @@
 // -*- coding: utf-8 -*-
 /**
  * Clinical Decision Support System (CDSS) -- Luxury OLED Workspace
- * Pure Vanilla ES6+ Client with Collapsible Drawer, Multi-PDF Ingestion, & Gemini Capsule
+ * Pure Vanilla ES6+ Client with In-Page Inline PDF Viewer, Persistent Chat History, Multi-PDF Ingestion, & Gemini Capsule
  */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -47,18 +47,97 @@ document.addEventListener("DOMContentLoaded", () => {
         bmScorePill: getEl("bmScorePill"),
         benchmarkTableRows: getEl("benchmarkTableRows"),
         toastNotification: getEl("toastNotification"),
+        // In-Page Inline PDF Viewer Elements
+        pdfViewerModal: getEl("pdfViewerModal"),
+        closePdfViewerBtn: getEl("closePdfViewerBtn"),
+        pdfViewerDocTitle: getEl("pdfViewerDocTitle"),
+        pdfViewerPageBadge: getEl("pdfViewerPageBadge"),
+        pdfViewerDocSub: getEl("pdfViewerDocSub"),
+        pdfViewerExternalLink: getEl("pdfViewerExternalLink"),
+        inlinePdfFrame: getEl("inlinePdfFrame"),
+        pdfLoadingSpinner: getEl("pdfLoadingSpinner"),
     };
 
-    // ── AUDIT HISTORY STATE ──
-    const STORAGE_KEY = "cdss_luxury_audit_history_v1";
+    // ── STATE & PERSISTENCE KEYS ──
+    const AUDIT_STORAGE_KEY = "cdss_luxury_audit_history_v1";
+    const CHAT_STORAGE_KEY = "cdss_clinical_chat_stream_v2";
+
     let auditHistory = loadAuditHistory();
-    updateAuditSidebarUI();
+    let chatStream = loadChatStream();
 
     // ── INITIALIZATION ──
     initDynamicTimeTracker();
     loadIndexedDocuments();
     loadPresetQuickChips();
     loadBenchmarkScore();
+    updateAuditSidebarUI();
+    restoreChatStreamUI();
+
+    // ── IN-PAGE INLINE PDF VIEWER ──
+    function openInlinePdfViewer(docName, pageNum = 1, sectionName = "") {
+        if (!els.pdfViewerModal || !els.inlinePdfFrame) return;
+
+        const cleanDocName = docName || "fneur-16-1564680.pdf";
+        const page = parseInt(pageNum, 10) || 1;
+        const pdfUrl = `/assets/${encodeURIComponent(cleanDocName)}#page=${page}&view=FitH`;
+
+        if (els.pdfViewerDocTitle) els.pdfViewerDocTitle.textContent = cleanDocName;
+        if (els.pdfViewerPageBadge) els.pdfViewerPageBadge.textContent = `Page ${page}`;
+        if (els.pdfViewerDocSub) {
+            els.pdfViewerDocSub.textContent = sectionName ? `Section: ${sectionName} · Inline Provenance Verification` : "Inline Evidence Provenance Verification";
+        }
+        if (els.pdfViewerExternalLink) {
+            els.pdfViewerExternalLink.href = pdfUrl;
+        }
+
+        if (els.pdfLoadingSpinner) {
+            els.pdfLoadingSpinner.style.display = "flex";
+        }
+
+        els.inlinePdfFrame.src = pdfUrl;
+        els.inlinePdfFrame.onload = () => {
+            if (els.pdfLoadingSpinner) {
+                els.pdfLoadingSpinner.style.display = "none";
+            }
+        };
+
+        els.pdfViewerModal.hidden = false;
+        document.body.style.overflow = "hidden";
+    }
+
+    function closeInlinePdfViewer() {
+        if (!els.pdfViewerModal) return;
+        els.pdfViewerModal.hidden = true;
+        document.body.style.overflow = "";
+        if (els.inlinePdfFrame) {
+            els.inlinePdfFrame.src = "about:blank";
+        }
+    }
+
+    if (els.closePdfViewerBtn) {
+        els.closePdfViewerBtn.addEventListener("click", closeInlinePdfViewer);
+    }
+
+    if (els.pdfViewerModal) {
+        els.pdfViewerModal.addEventListener("click", (e) => {
+            if (e.target === els.pdfViewerModal) {
+                closeInlinePdfViewer();
+            }
+        });
+    }
+
+    // Global Key Listener (Esc to close modals / sidebar)
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+            if (els.pdfViewerModal && !els.pdfViewerModal.hidden) {
+                closeInlinePdfViewer();
+            } else if (els.benchmarkModal && !els.benchmarkModal.hidden) {
+                els.benchmarkModal.hidden = true;
+            } else if (els.clinicalSidebar && els.clinicalSidebar.classList.contains("open")) {
+                els.clinicalSidebar.classList.remove("open");
+            }
+        }
+    });
 
     // ── SIDEBAR DRAWER TOGGLE ──
     if (els.sidebarToggleBtn && els.clinicalSidebar) {
@@ -73,7 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Close on outside click
+    // Close sidebar on outside click
     document.addEventListener("click", (e) => {
         if (
             els.clinicalSidebar &&
@@ -86,9 +165,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ── NEW CLINICAL SESSION ──
+    // ── NEW CLINICAL SESSION (EXPLICIT RESET) ──
     if (els.newSessionBtn) {
         els.newSessionBtn.addEventListener("click", () => {
+            chatStream = [];
+            saveChatStream();
             if (els.conversationStream) {
                 els.conversationStream.innerHTML = "";
                 els.conversationStream.hidden = true;
@@ -103,8 +184,48 @@ document.addEventListener("DOMContentLoaded", () => {
                 els.clinicalQueryInput.value = "";
                 els.clinicalQueryInput.focus();
             }
-            showToast("New clinical session started.");
+            showToast("New clinical session started (History reset).");
         });
+    }
+
+    // ── CHAT STREAM PERSISTENCE FUNCTIONS ──
+    function loadChatStream() {
+        try {
+            const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch {
+            return [];
+        }
+    }
+
+    function saveChatStream() {
+        try {
+            localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatStream.slice(-50)));
+        } catch (err) {
+            console.error("[Chat Stream Storage Error]", err);
+        }
+    }
+
+    function restoreChatStreamUI() {
+        if (!chatStream || chatStream.length === 0) return;
+
+        if (els.heroGreeting) {
+            els.heroGreeting.classList.add("collapsed");
+        }
+        if (els.conversationStream) {
+            els.conversationStream.hidden = false;
+            els.conversationStream.innerHTML = "";
+        }
+
+        chatStream.forEach((msg) => {
+            if (msg.role === "user") {
+                appendUserMessage(msg.text);
+            } else if (msg.role === "assistant") {
+                appendAssistantCard(msg.data, msg.latency || 0, true);
+            }
+        });
+
+        scrollToBottom();
     }
 
     // ── MULTI-PDF UPLOAD & DROPZONE ──
@@ -180,40 +301,42 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await resp.json();
             const docs = data.documents || [];
 
-            const totalChunks = docs.reduce((acc, d) => acc + (d.chunks_count || 0), 0);
             if (els.activeDocCount) els.activeDocCount.textContent = docs.length;
-            if (els.activeChunkCountBadge) els.activeChunkCountBadge.textContent = `${totalChunks} chunks`;
-
-            if (docs.length === 0) {
-                els.indexedDocsStack.innerHTML = `<div style="font-size:0.75rem;color:var(--text-muted);padding:0.6rem 0;text-align:center;">No manuscripts indexed yet.</div>`;
-                return;
-            }
+            if (els.activeChunkCountBadge) els.activeChunkCountBadge.textContent = `${data.total_chunks || 0} chunks`;
 
             els.indexedDocsStack.innerHTML = docs
                 .map((doc) => {
-                    const isPrimary = doc.id === "doc_default_01" || doc.filename === "fneur-16-1564680.pdf";
-                    const safeName = escapeHtml(doc.filename);
-                    const subLabel = isPrimary ? "Baseline Cohort (N=235)" : `${doc.pages || 1} pages · ${doc.tables || 0} tables`;
-                    const pdfHref = `/assets/${encodeURIComponent(doc.filename)}`;
+                    const isPrimary = doc.filename && doc.filename.includes("fneur-16-1564680");
+                    const safeName = doc.filename || "Clinical Manuscript.pdf";
+                    const subLabel = doc.pages ? `${doc.pages} pages` : "Primary Cohort";
 
                     return `
                     <div class="indexed-doc-card ${isPrimary ? 'primary-baseline' : ''}">
                         <div class="indexed-doc-top">
-                            <a href="${pdfHref}" target="_blank" rel="noopener" class="indexed-doc-title" title="Open PDF: ${safeName}">
-                                📄 ${safeName}
-                            </a>
+                            <button type="button" class="indexed-doc-title doc-preview-trigger" data-doc="${escapeHtml(safeName)}" title="Preview PDF: ${escapeHtml(safeName)}">
+                                📄 ${escapeHtml(safeName)}
+                            </button>
                             <span class="active-indicator-tag">Active</span>
                         </div>
                         <div class="indexed-doc-footer">
                             <span class="indexed-doc-meta">${subLabel} · ${doc.chunks_count || 0} chunks</span>
-                            <a href="${pdfHref}" target="_blank" rel="noopener" class="indexed-doc-btn">
-                                View PDF
-                            </a>
+                            <button type="button" class="indexed-doc-btn doc-preview-trigger" data-doc="${escapeHtml(safeName)}">
+                                Preview PDF
+                            </button>
                         </div>
                     </div>
                 `;
                 })
                 .join("");
+
+            // Attach inline PDF preview triggers
+            els.indexedDocsStack.querySelectorAll(".doc-preview-trigger").forEach((btn) => {
+                btn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    const docName = btn.getAttribute("data-doc");
+                    openInlinePdfViewer(docName, 1, "Full Document");
+                });
+            });
         } catch (err) {
             console.error("[Load Documents Error]", err);
         }
@@ -311,7 +434,7 @@ document.addEventListener("DOMContentLoaded", () => {
         els.dynamicTimeTracker.textContent = greeting;
     }
 
-    // ── QUERY EXECUTION WITH GEMINI SHIMMER LOADER ──
+    // ── QUERY EXECUTION WITH GEMINI SHIMMER LOADER & PERSISTENCE ──
     async function executeClinicalQuery(queryText, isReplay = false, replayData = null) {
         // Transition hero greeting
         if (els.heroGreeting) {
@@ -323,6 +446,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Render User Query Bubble
         appendUserMessage(queryText);
+
+        // Record User Query to Chat Persistence
+        if (!isReplay) {
+            chatStream.push({
+                role: "user",
+                text: queryText,
+                timestamp: Date.now(),
+            });
+            saveChatStream();
+        }
 
         // Clear and reset textarea
         if (els.clinicalQueryInput) {
@@ -363,6 +496,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 loaderEl.remove();
             }
             appendAssistantCard(data, latency, false);
+
+            // Record Assistant Response to Chat Persistence
+            chatStream.push({
+                role: "assistant",
+                data: data,
+                latency: latency,
+                timestamp: Date.now(),
+            });
+            saveChatStream();
 
             // Record into audit history
             recordAuditEntry(queryText, data);
@@ -442,7 +584,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 const isTable = cite.source_type === "table";
                 const pageNum = cite.page || 1;
                 const docName = cite.document || "fneur-16-1564680.pdf";
-                const pdfHref = `/assets/${encodeURIComponent(docName)}#page=${pageNum}`;
 
                 let tableSnippet = "";
                 if (isTable && cite.table_markdown) {
@@ -452,10 +593,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 return `
                     <div class="provenance-item-card">
                         <div class="provenance-item-top">
-                            <span class="src-type-tag">${cite.source_type || 'text'}</span>
-                            <a href="${pdfHref}" target="_blank" rel="noopener" class="pdf-jump-btn">
+                            <span class="src-type-tag">${escapeHtml(cite.source_type || 'text')}</span>
+                            <button type="button" class="pdf-jump-btn inline-pdf-trigger" data-doc="${escapeHtml(docName)}" data-page="${pageNum}" data-section="${escapeHtml(cite.section || '')}">
                                 📄 View in PDF (p.${pageNum})
-                            </a>
+                            </button>
                         </div>
                         <div class="provenance-meta-lines">
                             <div><strong>Doc:</strong> ${escapeHtml(docName)}</div>
@@ -525,14 +666,18 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
-        els.conversationStream.appendChild(card);
-    }
-
-    function scrollToBottom() {
-        window.scrollTo({
-            top: document.body.scrollHeight,
-            behavior: "smooth",
+        // Bind Inline PDF Viewer buttons inside citations
+        card.querySelectorAll(".inline-pdf-trigger").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                const doc = btn.getAttribute("data-doc");
+                const page = btn.getAttribute("data-page");
+                const sec = btn.getAttribute("data-section");
+                openInlinePdfViewer(doc, page, sec);
+            });
         });
+
+        els.conversationStream.appendChild(card);
     }
 
     // ── CLINICAL MARKDOWN FORMATTER ──
@@ -580,6 +725,7 @@ document.addEventListener("DOMContentLoaded", () => {
             html += `<th>${escapeHtml(h)}</th>`;
         });
         html += "</tr></thead><tbody>";
+
         bodyRows.forEach((row) => {
             html += "<tr>";
             row.forEach((cell) => {
@@ -587,16 +733,18 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             html += "</tr>";
         });
+
         html += "</tbody></table></div>";
         return html;
     }
 
-    // ── PRESET QUICK CHIPS (5 CURATED ESSENTIAL PILLS) ──
+    // ── PRESET QUICK-PROMPT CHIPS ──
     async function loadPresetQuickChips() {
         if (!els.quickChipsContainer) return;
+
         const defaultQueries = [
-            { label: "PWNE Treatment Rate", query: "What treatment protocol and proportion of PWNE patients received ASM?" },
-            { label: "PWE Recurrence Rate", query: "What was the 1-year seizure recurrence rate in patients with epilepsy (PWE)?" },
+            { label: "PWNE Treatment Protocol", query: "What treatment protocol and proportion of PWNE patients received ASM?" },
+            { label: "1-Yr Seizure Recurrence", query: "What was the 1-year seizure recurrence rate in patients with epilepsy (PWE)?" },
             { label: "Demographics (Table 1)", query: "What were the demographics of the study cohort?" },
             { label: "[!] TSH (OOD)", query: "What are normal TSH levels for thyroid patients?" },
             { label: "[!] Broken Knee (Trauma)", query: "I fell and have a broken knee, what should I do?" },
@@ -723,7 +871,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ── AUDIT HISTORY PERSISTENCE ──
     function loadAuditHistory() {
         try {
-            const raw = localStorage.getItem(STORAGE_KEY);
+            const raw = localStorage.getItem(AUDIT_STORAGE_KEY);
             return raw ? JSON.parse(raw) : [];
         } catch {
             return [];
@@ -732,7 +880,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function saveAuditHistory() {
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(auditHistory.slice(0, 50)));
+            localStorage.setItem(AUDIT_STORAGE_KEY, JSON.stringify(auditHistory.slice(0, 50)));
         } catch (err) {
             console.error("[Storage Error]", err);
         }

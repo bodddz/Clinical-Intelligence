@@ -355,6 +355,37 @@
             </div>
         </div>
 
+        <!-- ── IN-PAGE INLINE PDF PREVIEWER MODAL ── -->
+        <div id="pdfViewerModal" class="modal-overlay pdf-viewer-overlay" hidden>
+            <div class="modal-card pdf-viewer-card">
+                <div class="modal-header pdf-viewer-header">
+                    <div class="modal-title-stack">
+                        <div class="pdf-header-title-row">
+                            <span class="pdf-icon">📄</span>
+                            <h2 id="pdfViewerDocTitle" class="pdf-viewer-title">Clinical Manuscript Preview</h2>
+                            <span id="pdfViewerPageBadge" class="pdf-page-badge">Page 1</span>
+                        </div>
+                        <p id="pdfViewerDocSub" class="pdf-viewer-sub">Inline Evidence Provenance Verification</p>
+                    </div>
+                    <div class="modal-header-actions">
+                        <a id="pdfViewerExternalLink" href="#" target="_blank" rel="noopener" class="pdf-action-link" title="Open in dedicated tab">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                            <span>External</span>
+                        </a>
+                        <button id="closePdfViewerBtn" class="modal-close-btn" title="Close PDF Preview (Esc)">✕</button>
+                    </div>
+                </div>
+
+                <div class="pdf-viewer-body">
+                    <div id="pdfLoadingSpinner" class="pdf-loading-indicator">
+                        <div class="pdf-spinner-ring"></div>
+                        <span>Loading clinical document...</span>
+                    </div>
+                    <iframe id="inlinePdfFrame" class="inline-pdf-iframe" src="about:blank" title="Inline PDF Viewer"></iframe>
+                </div>
+            </div>
+        </div>
+
         <!-- ── TOAST NOTIFICATION ── -->
         <div id="toastNotification" class="minimal-toast" hidden></div>
     </div>
