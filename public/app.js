@@ -313,13 +313,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div class="indexed-doc-card ${isPrimary ? 'primary-baseline' : ''}">
                         <div class="indexed-doc-top">
                             <button type="button" class="indexed-doc-title doc-preview-trigger" data-doc="${escapeHtml(safeName)}" title="Preview PDF: ${escapeHtml(safeName)}">
-                                📄 ${escapeHtml(safeName)}
+                                <span class="doc-icon">📄</span>
+                                <span class="doc-name-text">${escapeHtml(safeName)}</span>
                             </button>
                             <span class="active-indicator-tag">Active</span>
                         </div>
                         <div class="indexed-doc-footer">
                             <span class="indexed-doc-meta">${subLabel} · ${doc.chunks_count || 0} chunks</span>
-                            <button type="button" class="indexed-doc-btn doc-preview-trigger" data-doc="${escapeHtml(safeName)}">
+                            <button type="button" class="indexed-doc-btn doc-preview-trigger" data-doc="${escapeHtml(safeName)}" title="Preview ${escapeHtml(safeName)} inline">
                                 Preview PDF
                             </button>
                         </div>
@@ -332,6 +333,7 @@ document.addEventListener("DOMContentLoaded", () => {
             els.indexedDocsStack.querySelectorAll(".doc-preview-trigger").forEach((btn) => {
                 btn.addEventListener("click", (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     const docName = btn.getAttribute("data-doc");
                     openInlinePdfViewer(docName, 1, "Full Document");
                 });
