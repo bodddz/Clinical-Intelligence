@@ -1734,7 +1734,39 @@ html, body {
     to { transform: rotate(360deg); }
 }
 
+/* ── AUDIT ACTION BUTTONS ── */
+.audit-action-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.mini-text-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-secondary);
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--radius-xs);
+    font-size: 0.72rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    outline: none;
+    user-select: none;
+}
+
+.mini-text-btn:hover {
+    color: var(--text-pure);
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.mini-text-btn:active {
+    transform: scale(0.96);
+}
+
 /* ── RESPONSIVE ── */
+
 @media (max-width: 768px) {
     .hero-headline {
         font-size: 1.85rem;

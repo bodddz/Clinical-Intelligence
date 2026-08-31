@@ -343,13 +343,33 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ── AUDIT ACTIONS ──
+    function clearAuditTrail(e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        // 1. Clear state array
+        auditHistory = [];
+
+        // 2. Remove & reset items in localStorage
+        try {
+            localStorage.removeItem(AUDIT_STORAGE_KEY);
+            localStorage.removeItem("cdss_audit_trail");
+            localStorage.setItem(AUDIT_STORAGE_KEY, JSON.stringify([]));
+            localStorage.setItem("cdss_audit_trail", JSON.stringify([]));
+        } catch (err) {
+            console.error("[Storage Clear Error]", err);
+        }
+
+        // 3. Reset counter badge & 4. Immediately render empty state placeholder
+        updateAuditSidebarUI();
+
+        showToast("Audit trail cleared.");
+    }
+
     if (els.clearAuditBtn) {
-        els.clearAuditBtn.addEventListener("click", () => {
-            auditHistory = [];
-            saveAuditHistory();
-            updateAuditSidebarUI();
-            showToast("Session audit trail cleared.");
-        });
+        els.clearAuditBtn.removeAttribute("disabled");
+        els.clearAuditBtn.addEventListener("click", clearAuditTrail);
     }
 
     if (els.exportAuditBtn) {
