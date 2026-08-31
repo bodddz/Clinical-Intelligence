@@ -61,6 +61,15 @@
     --transition-smooth: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ── NO SCROLLBAR UTILITY ── */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
 /* ── RESET & BASE SETUP ── */
 *, *::before, *::after {
     box-sizing: border-box;
@@ -117,6 +126,7 @@ html, body {
 .oled-canvas {
     position: relative;
     width: 100%;
+    max-width: 100vw;
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
@@ -141,15 +151,17 @@ html, body {
     top: 0;
     left: 0;
     right: 0;
-    z-index: 150;
+    z-index: 50;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.85rem 1.25rem;
+    padding: 1rem 1.5rem;
     background: transparent;
     border: none;
     pointer-events: none;
     gap: 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .brand-floating-capsule {
@@ -227,8 +239,8 @@ html, body {
     pointer-events: auto;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.04) inset;
     transition: all var(--transition-fast);
-    flex-shrink: 1;
-    min-width: 0;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .live-grounding-pill:hover {
@@ -764,7 +776,7 @@ html, body {
     width: 100%;
     max-width: 860px;
     margin: 0 auto;
-    padding: 5.5rem 1.5rem 10rem;
+    padding: 7rem 1.5rem 11rem; /* pt-28 pb-44 */
     min-height: 100dvh;
     flex: 1;
     display: flex;
@@ -772,13 +784,14 @@ html, body {
     position: relative;
     z-index: 10;
     transition: all var(--transition-smooth);
+    box-sizing: border-box;
 }
 
 .workspace-viewport.idle-state {
     justify-content: center;
     align-items: center;
-    padding-top: 5.5rem;
-    padding-bottom: 10rem;
+    padding-top: 7rem;
+    padding-bottom: 11rem;
 }
 
 .conversational-canvas {
@@ -1225,28 +1238,32 @@ html, body {
     100% { background-position: -200% 0; }
 }
 
-/* ── FLOATING GEMINI CAPSULE DOCK (BOTTOM) ── */
+/* ── PINNED FIXED BOTTOM INPUT DOCK (Z-40) ── */
 .floating-dock {
     position: fixed;
-    bottom: 1rem;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(820px, calc(100% - 1.5rem));
-    z-index: 100;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    width: 100%;
+    background: linear-gradient(to top, #020617 0%, rgba(2, 6, 23, 0.92) 70%, transparent 100%);
+    padding: 1.5rem 1rem 1rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.65rem;
     pointer-events: none;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-sizing: border-box;
 }
 
 .dock-container {
     width: 100%;
+    max-width: 768px; /* max-w-3xl */
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.65rem;
+    gap: 0.5rem;
     pointer-events: auto;
 }
 
@@ -1387,33 +1404,51 @@ html, body {
     font-weight: 700;
 }
 
-/* Quick Prompt Pills */
+/* Quick Prompt Pills (Single-Line Horizontal Scroll Container) */
 .quick-chips-bar {
     width: 100%;
     display: flex;
     justify-content: center;
+    overflow: hidden;
 }
 
 .chips-scroll-lane {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    flex-wrap: wrap;
-    justify-content: center;
-    padding: 0.2rem 0.5rem;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 0.35rem 0.5rem;
     max-width: 100%;
+    width: 100%;
+    justify-content: flex-start;
+}
+
+@media (min-width: 768px) {
+    .chips-scroll-lane {
+        justify-content: center;
+    }
+}
+
+.chips-scroll-lane::-webkit-scrollbar {
+    display: none;
 }
 
 .floating-chip {
     background: rgba(18, 22, 30, 0.88);
     border: 1px solid var(--border-subtle);
     color: var(--text-secondary);
-    min-height: 38px;
+    min-height: 36px;
     padding: 0.4rem 0.95rem;
     border-radius: var(--radius-pill);
     font-size: clamp(0.72rem, 1.8vw, 0.78rem);
     font-weight: 600;
     white-space: nowrap;
+    flex-shrink: 0;
     cursor: pointer;
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
@@ -1980,7 +2015,7 @@ html, body {
     }
 
     .top-floating-header {
-        padding: 0.55rem 0.65rem;
+        padding: 0.75rem 1rem;
         gap: 0.5rem;
     }
 
@@ -2006,7 +2041,7 @@ html, body {
     }
 
     .live-grounding-pill {
-        padding: 0.35rem 0.55rem;
+        padding: 0.35rem 0.65rem;
         gap: 0.35rem;
         font-size: 0.68rem;
     }
@@ -2017,12 +2052,12 @@ html, body {
     }
 
     .workspace-viewport {
-        padding: 4.75rem 0.75rem 10rem;
+        padding: 6rem 1rem 11rem; /* pt-24 pb-44 */
     }
 
     .workspace-viewport.idle-state {
-        padding-top: 4.75rem;
-        padding-bottom: 10rem;
+        padding-top: 6rem;
+        padding-bottom: 11rem;
     }
 
     .hero-editorial-panel {
@@ -2038,6 +2073,15 @@ html, body {
         font-size: clamp(1.45rem, 5.5vw, 2rem);
         max-width: 90vw;
         line-height: 1.3;
+    }
+
+    .floating-dock {
+        padding: 1.25rem 0.75rem 0.75rem;
+        padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem));
+    }
+
+    .capsule-bar {
+        padding: 0.35rem 0.5rem;
     }
 
     .user-query-bubble {
