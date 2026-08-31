@@ -125,67 +125,70 @@ html, body {
     z-index: 1;
 }
 
-/* ── UNIFIED FIXED TOP NAVIGATION BAR (Z-50) ── */
-.top-navbar {
+/* ── FLOATING ADAPTIVE TOP ELEMENTS (Z-50) ── */
+.top-floating-header {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 64px;
+    top: 1.25rem;
+    left: 1.5rem;
+    right: 1.5rem;
     z-index: 150;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 1.75rem;
-    background: rgba(6, 8, 12, 0.88);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border-subtle);
+    background: transparent;
+    border: none;
+    pointer-events: none;
 }
 
-.navbar-left {
+.brand-floating-capsule {
     display: flex;
     align-items: center;
-    gap: 0.95rem;
+    gap: 0.65rem;
+    background: rgba(16, 20, 28, 0.75);
+    border: 1px solid var(--border-subtle);
+    padding: 0.3rem 0.95rem 0.3rem 0.35rem;
+    border-radius: var(--radius-pill);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    pointer-events: auto;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    transition: all var(--transition-fast);
 }
 
-.navbar-right {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+.brand-floating-capsule:hover {
+    background: rgba(22, 28, 40, 0.9);
+    border-color: rgba(255, 255, 255, 0.16);
 }
 
 .floating-icon-btn {
-    background: rgba(20, 24, 32, 0.85);
+    background: rgba(255, 255, 255, 0.08);
     border: 1px solid var(--border-subtle);
     color: var(--text-primary);
-    width: 42px;
-    height: 42px;
-    min-width: 42px;
-    min-height: 42px;
-    border-radius: var(--radius-sm);
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
     transition: all var(--transition-fast);
 }
 
 .floating-icon-btn:hover {
     color: var(--text-pure);
-    background: rgba(30, 36, 48, 0.95);
-    border-color: var(--border-glow);
-    transform: scale(1.03);
+    background: rgba(56, 189, 248, 0.2);
+    border-color: var(--gemini-cyan);
+    transform: scale(1.05);
 }
 
 .floating-icon-btn:active {
-    transform: scale(0.97);
+    transform: scale(0.95);
 }
 
 .workspace-brand-tag {
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     font-weight: 700;
     color: var(--text-pure);
     letter-spacing: -0.01em;
@@ -196,16 +199,25 @@ html, body {
     display: inline-flex;
     align-items: center;
     gap: 0.55rem;
-    background: rgba(20, 24, 32, 0.85);
+    background: rgba(16, 20, 28, 0.75);
     border: 1px solid var(--border-subtle);
     padding: 0.45rem 0.95rem;
     border-radius: var(--radius-pill);
     font-size: 0.76rem;
+    font-weight: 600;
     color: var(--text-secondary);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     user-select: none;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    pointer-events: auto;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    transition: all var(--transition-fast);
+}
+
+.live-grounding-pill:hover {
+    background: rgba(22, 28, 40, 0.9);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: var(--text-pure);
 }
 
 .pulse-dot {
@@ -1922,13 +1934,26 @@ html, body {
         font-size: 14px;
     }
 
-    .top-navbar {
-        padding: 0 1rem;
-        height: 58px;
+    .top-floating-header {
+        top: 0.75rem;
+        left: 0.75rem;
+        right: 0.75rem;
+    }
+
+    .brand-floating-capsule {
+        padding: 0.25rem 0.75rem 0.25rem 0.25rem;
+        gap: 0.5rem;
+    }
+
+    .floating-icon-btn {
+        width: 34px;
+        height: 34px;
+        min-width: 34px;
+        min-height: 34px;
     }
 
     .workspace-brand-tag {
-        font-size: 0.88rem;
+        font-size: 0.82rem;
     }
 
     .live-grounding-pill .grounding-text {
@@ -1936,7 +1961,7 @@ html, body {
     }
 
     .live-grounding-pill {
-        padding: 0.4rem 0.65rem;
+        padding: 0.45rem 0.65rem;
     }
 
     .clinical-drawer {
