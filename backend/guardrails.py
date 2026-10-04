@@ -38,27 +38,25 @@ class ConversationalIntentRouter:
 
     # Gate -0.5: Prompt Injection & Adversarial Defense Patterns
     PROMPT_INJECTION_PATTERNS = [
-        re.compile(r"\b(ignore\s+(all\s+)?(previous\s+)?(instructions|rules|prompts|guidelines))\b", re.IGNORECASE),
+        re.compile(r"\b(ignore|disregard|forget|bypass|override|disable|cancel)\b[\s\S]{0,50}\b(instructions?|rules?|prompts?|guidelines?|constraints?|safety|filters?|guardrails?|policy|policies)\b", re.IGNORECASE),
+        re.compile(r"\b(ignore|disregard|forget)\b\s+(all|any|your|the|previous|prior|system|these|my|everything)\b", re.IGNORECASE),
         re.compile(r"\b(system\s+prompt|jailbreak|disregard\s+guidelines|bypass\s+safety)\b", re.IGNORECASE),
-        re.compile(r"\b(pretend\s+you\s+are|act\s+as\s+a|you\s+are\s+now|roleplay\s+as)\b", re.IGNORECASE),
-        re.compile(r"\b(reveal\s+(your\s+)?(system\s+instructions|prompt|secret|api\s+key))\b", re.IGNORECASE),
-        re.compile(r"\b(developer\s+mode|DAN\s+mode|safety\s+filters\s+disabled|all\s+restrictions\s+removed)\b", re.IGNORECASE),
-        re.compile(r"\b(override\s+(your\s+)?(instructions|safety|rules|constraints|guidelines))\b", re.IGNORECASE),
-        re.compile(r"\b(forget\s+(everything|all|your\s+training|your\s+instructions))\b", re.IGNORECASE),
+        re.compile(r"\b(pretend\s+you\s+are|act\s+as\s+a|you\s+are\s+now|roleplay\s+as|take\s+on\s+the\s+role)\b", re.IGNORECASE),
+        re.compile(r"\b(reveal|show|display|print|output)\b[\s\S]{0,40}\b(system\s+instructions|prompt|secret|api\s+key|guardrails?|hidden\s+rules?)\b", re.IGNORECASE),
+        re.compile(r"\b(developer\s+mode|dan\s+mode|safety\s+filters?\s+disabled|all\s+restrictions\s+removed)\b", re.IGNORECASE),
         re.compile(r"\b(new\s+persona|new\s+instructions?|from\s+now\s+on\s+you\s+(are|will))\b", re.IGNORECASE),
         # Arabic adversarial prompts
-        re.compile(r"\b(انسى\s+التعليمات|تجاهل\s+(الشروط|التعليمات|القواعد)|اتصرف\s+كأنك|تظاهر\s+بأنك)\b", re.IGNORECASE),
+        re.compile(r"\b(انسى\s+التعليمات|تجاهل\s+(الشروط|التعليمات|القواعد|اي\s+تعليمات)|اتصرف\s+كأنك|تظاهر\s+بأنك)\b", re.IGNORECASE),
     ]
 
     # Gate -0.5 extension: Tail-injection — adversarial directives embedded AFTER clinical content
     TAIL_INJECTION_PATTERNS = [
-        re.compile(r"(he\s+must(n'?t)?\s+(respond|answer)|he\s+should(n'?t)?\s+(respond|answer))\b", re.IGNORECASE),
-        re.compile(r"\b(do\s+not\s+(respond|answer|reply)|don'?t\s+(respond|answer|reply))\b", re.IGNORECASE),
-        re.compile(r"\b(must\s+not\s+(respond|answer|reply|generate|output))\b", re.IGNORECASE),
-        re.compile(r"\b(stop\s+(responding|answering|generating)|refuse\s+to\s+(answer|respond))\b", re.IGNORECASE),
-        re.compile(r"\b(you\s+(must|should|shall)\s+not\s+(answer|respond|reply|generate))\b", re.IGNORECASE),
-        re.compile(r"\b(output\s+nothing|return\s+nothing|say\s+nothing|generate\s+nothing)\b", re.IGNORECASE),
-        re.compile(r"\b(لا\s+ترد|لا\s+تجاوب|يجب\s+ألا\s+يرد|لا\s+تستجيب)\b", re.IGNORECASE),
+        re.compile(r"\b(mustn?'?t|musn'?t|shouldn?'?t|must\s+not|should\s+not|do\s+not|don'?t|cannot|can'?t)\b[\s\S]{0,30}\b(respond|responf|answer|reply|generate|output|speak)\b", re.IGNORECASE),
+        re.compile(r"\b(he|she|it|you|system|ai|bot)\b[\s\S]{0,30}\b(mustn?'?t|musn'?t|shouldn?'?t|must\s+not|should\s+not|cannot|can'?t|not\s+allowed\s+to)\b[\s\S]{0,30}\b(respond|responf|answer|reply)\b", re.IGNORECASE),
+        re.compile(r"\b(stop\s+(responding|answering|generating|replying)|refuse\s+to\s+(answer|respond|reply))\b", re.IGNORECASE),
+        re.compile(r"\b(still\s+answering[a-z]*|why\s+is\s+(it|this|the\s+system)\s+(still\s+)?answering[a-z]*)\b", re.IGNORECASE),
+        re.compile(r"\b(output\s+nothing|return\s+nothing|say\s+nothing|generate\s+nothing|produce\s+nothing)\b", re.IGNORECASE),
+        re.compile(r"\b(لا\s+ترد|لا\s+تجاوب|يجب\s+ألا\s+يرد|لا\s+تستجيب|متردش|متجاوبش|امنع\s+الرد)\b", re.IGNORECASE),
     ]
 
     # Non-Clinical Conversational Noise & Person Names

@@ -263,25 +263,36 @@ class MedicalPDFParser:
     def _extract_printed_page(self, margin_blocks: List[Any], physical_page: int) -> str:
         """
         Extracts the printed folio page number from PDF margin blocks.
-        Scans ALL margin blocks and picks the LAST valid standalone integer found
-        (footer numbers are more reliable than repeated header numbers).
-        Falls back to physical_page if no valid margin number is found.
+        1. Checks for explicit 'Page X of Y' or 'Page X' patterns in margin text.
+        2. If not found, checks for standalone integer candidates, avoiding total page numbers (e.g. following 'of').
+        3. Falls back to physical_page if no valid margin number is found.
         """
+        margin_text = " ".join(b[4].strip() for b in margin_blocks)
+
+        # Priority 1: Explicit "Page X of Y" or "Page X"
+        m_page = re.search(r"\bPage\s+(\d+)(?:\s+of\s+\d+)?\b", margin_text, re.IGNORECASE)
+        if m_page:
+            val = int(m_page.group(1))
+            if 1 <= val <= 2000:
+                return f"{val:02d}"
+
+        # Priority 2: Standalone integer in margin, preferring bottom (footer)
         candidates = []
         for b in margin_blocks:
             txt = b[4].strip()
-            # Must be a standalone integer (no surrounding text)
             m = re.match(r"^0?([1-9]\d*)$", txt)
             if m:
                 val = int(m.group(1))
-                if 1 <= val <= 500:  # extended upper bound for large guideline PDFs
-                    # Use y-position to prefer footer over header
-                    y_pos = b[1]  # top-y of block
+                # Check if this integer is preceded by "of" in margin_text (indicating total pages)
+                if re.search(r"\bof\s+" + str(val) + r"\b", margin_text, re.IGNORECASE):
+                    continue
+                if 1 <= val <= 2000:
+                    y_pos = b[1]
                     candidates.append((y_pos, val))
         if candidates:
-            # Prefer the bottom-most candidate (highest y) = footer page number
             candidates.sort(key=lambda c: c[0], reverse=True)
             return f"{candidates[0][1]:02d}"
+
         return f"{physical_page:02d}"
 
     def parse(self) -> Dict[str, Any]:
