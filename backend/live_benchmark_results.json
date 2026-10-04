@@ -15,8 +15,8 @@
       "target_cohort": "PWNE (N=89)",
       "status": "PASS_MATCHED (21)",
       "latency_ms": 3725.41,
-      "recommendation": "In this cohort, 21 patients were classified as PWNE. Of these, 11 were treated after an acute symptomatic seizure and 7 after status epilepticus, meaning 18 of 21 PWNE (\u2248**85.7% (18/21)**) received antiseizure medication.",
-      "evidence": "Twenty one patients, who did not meet the diagnostic criteria for epilepsy (PWNE), treatment was initiated based on individual considerations such as patient request or increased risk of injury. | Of these, 11 patients were treated after an acute symptomatic seizure, and seven patients were treated following status epilepticus as their \ufb01rst seizure manifestation.",
+      "recommendation": "In this cohort, 21 patients were classified as PWNE. Of these, 11 were treated after an acute symptomatic seizure and 7 after status epilepticus, meaning 18 of 21 PWNE (≈**85.7% (18/21)**) received antiseizure medication.",
+      "evidence": "Twenty one patients, who did not meet the diagnostic criteria for epilepsy (PWNE), treatment was initiated based on individual considerations such as patient request or increased risk of injury. | Of these, 11 patients were treated after an acute symptomatic seizure, and seven patients were treated following status epilepticus as their ﬁrst seizure manifestation.",
       "citations": [
         {
           "source": "fneur-16-1564680.pdf",
@@ -88,8 +88,8 @@
       "target_cohort": "PWE (N=146)",
       "status": "PASS_MATCHED (28%, recurrence, pwe)",
       "latency_ms": 7.69,
-      "recommendation": "The 1\u2011year seizure recurrence rate for patients with epilepsy (PWE) was **28%**.",
-      "evidence": "In summary, in our cohort, the recurrence rate after the \ufb01rst seizure at 1 year follow-up was 19.4% at one-year follow-up for all patients, and 28% for patients with a diagnosis of epilepsy. | Data from 235 patients were collected (41.7% female). Of these, 146 patients (62.1%) were diagnosed with epilepsy (PWE)",
+      "recommendation": "The 1‑year seizure recurrence rate for patients with epilepsy (PWE) was **28%**.",
+      "evidence": "In summary, in our cohort, the recurrence rate after the ﬁrst seizure at 1 year follow-up was 19.4% at one-year follow-up for all patients, and 28% for patients with a diagnosis of epilepsy. | Data from 235 patients were collected (41.7% female). Of these, 146 patients (62.1%) were diagnosed with epilepsy (PWE)",
       "citations": [
         {
           "source": "fneur-16-1564680.pdf",
@@ -148,7 +148,7 @@
           "page": 3,
           "printed_page": "03",
           "table_title": "Table 1",
-          "table_markdown": "|                                              |       |                  |        | n   |           |\n| -------------------------------------------- | ----- | ---------------- | ------ | --- | --------- |\n|                                              |       |                  |        |     | %         |\n| Age, M \u00b1 SD                                  | 56.84 | \u00b1 21,61 years    |        | 235 |           |\n| Sex                                          | Male  |                  |        | 137 | 58.3 41.7 |\n|                                              | Femal | e                |        | 98  |           |\n| Death within follow-up (FU) period           |       |                  |        | 28  | 11.9      |\n| Clinical diagnosis of epilepsy after first s |       | eizure           |        | 146 | 62.1      |\n| Clinical diagnosis of epilepsy following ol  |       | d classification |        | 45  | 19.1      |\n| Epilepsy classification                      |       |                  |        |     |           |\n| Idiopathic generalized                       |       |                  |        | 12  |           |\n| Focal                                        |       |                  |        | 129 |           |\n| Unclassified                                 |       |                  |        | 5   |           |\n| EEG                                          |       |                  |        | 230 | 97.9      |\n| Epileptiform discharges                      |       |                  |        | 51  | 22.2      |\n| Imaging MRI                                  |       | 186 79.1         |        |     |           |\n| Epileptogenic lesion                         |       |                  |        | 59  | 31.7      |\n| Postischemic encephalomalacia                |       |                  |        | 33  |           |\n| Posthemorrhagic encephalomalacia             |       |                  |        | 7   |           |\n| Tumor                                        |       |                  |        | 27  |           |\n| Cortical dysplasia                           |       |                  |        | 3   |           |\n| Hippocampal sclerosis                        |       |                  |        | 1   |           |\n| CCT                                          |       |                  |        | 49  | 20.9      |\n| Epileptogenic lesion                         |       |                  |        | 26  | 53.1      |\n| EEG + MRI/CT                                 |       |                  |        | 230 | 97.9      |\n| Epileptiform discharges + epileptogen        |       | ic lesion        |        | 22  | 9.6       |\n| ASM                                          |       |                  |        |     |           |\n|                                              | ASM   |                  | No ASM |     |           |\n| PWE                                          | 135   |                  | 11     | 146 |           |\n| PWNE                                         | 21    |                  | 68     | 89  |           |\n| Monotherapy                                  |       |                  |        | 147 |           |\n| Combination therapy                          |       |                  |        | 9   |           |\n| Levetiracetam                                |       |                  |        | 98  |           |\n| Lacosamide                                   |       |                  |        | 35  |           |\n| Lamotrigine                                  |       |                  |        | 15  |           |\n| Brivaracetam                                 |       |                  |        | 5   |           |\n| Eslicarbamazepine                            |       |                  |        | 4   |           |\n| Valproic acid                                |       |                  |        | 3   |           |\n| Oxcarbazepine                                |       |                  |        | 1   |           |\n| Clinical presentation of first sei           |       | zure             |        |     |           |\n| Acute symptomatic seizure                    |       |                  |        | 46  | 19.6      |\n| Status epilepticus                           |       |                  |        | 37  | 15.7      |",
+          "table_markdown": "|                                              |       |                  |        | n   |           |\n| -------------------------------------------- | ----- | ---------------- | ------ | --- | --------- |\n|                                              |       |                  |        |     | %         |\n| Age, M ± SD                                  | 56.84 | ± 21,61 years    |        | 235 |           |\n| Sex                                          | Male  |                  |        | 137 | 58.3 41.7 |\n|                                              | Femal | e                |        | 98  |           |\n| Death within follow-up (FU) period           |       |                  |        | 28  | 11.9      |\n| Clinical diagnosis of epilepsy after first s |       | eizure           |        | 146 | 62.1      |\n| Clinical diagnosis of epilepsy following ol  |       | d classification |        | 45  | 19.1      |\n| Epilepsy classification                      |       |                  |        |     |           |\n| Idiopathic generalized                       |       |                  |        | 12  |           |\n| Focal                                        |       |                  |        | 129 |           |\n| Unclassified                                 |       |                  |        | 5   |           |\n| EEG                                          |       |                  |        | 230 | 97.9      |\n| Epileptiform discharges                      |       |                  |        | 51  | 22.2      |\n| Imaging MRI                                  |       | 186 79.1         |        |     |           |\n| Epileptogenic lesion                         |       |                  |        | 59  | 31.7      |\n| Postischemic encephalomalacia                |       |                  |        | 33  |           |\n| Posthemorrhagic encephalomalacia             |       |                  |        | 7   |           |\n| Tumor                                        |       |                  |        | 27  |           |\n| Cortical dysplasia                           |       |                  |        | 3   |           |\n| Hippocampal sclerosis                        |       |                  |        | 1   |           |\n| CCT                                          |       |                  |        | 49  | 20.9      |\n| Epileptogenic lesion                         |       |                  |        | 26  | 53.1      |\n| EEG + MRI/CT                                 |       |                  |        | 230 | 97.9      |\n| Epileptiform discharges + epileptogen        |       | ic lesion        |        | 22  | 9.6       |\n| ASM                                          |       |                  |        |     |           |\n|                                              | ASM   |                  | No ASM |     |           |\n| PWE                                          | 135   |                  | 11     | 146 |           |\n| PWNE                                         | 21    |                  | 68     | 89  |           |\n| Monotherapy                                  |       |                  |        | 147 |           |\n| Combination therapy                          |       |                  |        | 9   |           |\n| Levetiracetam                                |       |                  |        | 98  |           |\n| Lacosamide                                   |       |                  |        | 35  |           |\n| Lamotrigine                                  |       |                  |        | 15  |           |\n| Brivaracetam                                 |       |                  |        | 5   |           |\n| Eslicarbamazepine                            |       |                  |        | 4   |           |\n| Valproic acid                                |       |                  |        | 3   |           |\n| Oxcarbazepine                                |       |                  |        | 1   |           |\n| Clinical presentation of first sei           |       | zure             |        |     |           |\n| Acute symptomatic seizure                    |       |                  |        | 46  | 19.6      |\n| Status epilepticus                           |       |                  |        | 37  | 15.7      |",
           "score": -1.0178
         }
       ],
@@ -161,7 +161,7 @@
       "target_cohort": "PWNE (N=89)",
       "status": "PASS_MATCHED (pwne, recurrence)",
       "latency_ms": 7.49,
-      "recommendation": "The 1\u2011year seizure recurrence rate for patients with a non\u2011epileptic diagnosis (PWNE) was **0% (0/53)**.",
+      "recommendation": "The 1‑year seizure recurrence rate for patients with a non‑epileptic diagnosis (PWNE) was **0% (0/53)**.",
       "evidence": "PWNE                            |        |              |     | 53 |      | | Recurrent seizure since last FU |        |              |     | 0   | 0    |",
       "citations": [
         {
@@ -197,7 +197,7 @@
           "page": 3,
           "printed_page": "03",
           "table_title": "Table 2",
-          "table_markdown": "|                                 |        |              |     | n   |      |\n| ------------------------------- | ------ | ------------ | --- | --- | ---- |\n|                                 |        |              |     |     | %    |\n| Outcome                         |        |              |     |     |      |\n| 6-months FU, M \u00b1 SD             | 6.08 m | onths \u00b11.35  |     | 185 |      |\n| Lost to FU                      |        |              |     | 50  |      |\n| Seizure-free                    |        |              |     | 143 | 77.3 |\n| PWE                             |        |              |     | 126 |      |\n| Seizure-free                    |        |              |     | 89  | 70.6 |\n| PWNE                            |        |              |     | 59  |      |\n| Recurrent seizure               |        |              |     | 5   | 8.5  |\n| 12-months FU, M \u00b1 SD            | 12.45  | months \u00b11.83 |     | 160 |      |\n| Lost to FU                      |        |              |     | 75  |      |\n| Seizure-free                    |        |              |     | 129 | 80.6 |\n| PWE                             |        |              |     | 107 |      |\n| Seizure-free since last FU      |        |              |     | 77  | 72.0 |\n| Recurrent seizure since last FU |        |              |     | 30  | 28.0 |\n| PWNE                            |        |              |     | 53  |      |\n| Recurrent seizure since last FU |        |              |     | 0   | 0    |",
+          "table_markdown": "|                                 |        |              |     | n   |      |\n| ------------------------------- | ------ | ------------ | --- | --- | ---- |\n|                                 |        |              |     |     | %    |\n| Outcome                         |        |              |     |     |      |\n| 6-months FU, M ± SD             | 6.08 m | onths ±1.35  |     | 185 |      |\n| Lost to FU                      |        |              |     | 50  |      |\n| Seizure-free                    |        |              |     | 143 | 77.3 |\n| PWE                             |        |              |     | 126 |      |\n| Seizure-free                    |        |              |     | 89  | 70.6 |\n| PWNE                            |        |              |     | 59  |      |\n| Recurrent seizure               |        |              |     | 5   | 8.5  |\n| 12-months FU, M ± SD            | 12.45  | months ±1.83 |     | 160 |      |\n| Lost to FU                      |        |              |     | 75  |      |\n| Seizure-free                    |        |              |     | 129 | 80.6 |\n| PWE                             |        |              |     | 107 |      |\n| Seizure-free since last FU      |        |              |     | 77  | 72.0 |\n| Recurrent seizure since last FU |        |              |     | 30  | 28.0 |\n| PWNE                            |        |              |     | 53  |      |\n| Recurrent seizure since last FU |        |              |     | 0   | 0    |",
           "score": -0.3522
         },
         {
@@ -234,7 +234,7 @@
       "target_cohort": "PWE (N=146)",
       "status": "PASS_MATCHED (92.5%, 135, 146, asm)",
       "latency_ms": 7.3,
-      "recommendation": "In this prospective cohort, **92.5% (135/146)** of patients diagnosed with epilepsy (PWE) received immediate anti\u2011seizure medication after their first seizure.",
+      "recommendation": "In this prospective cohort, **92.5% (135/146)** of patients diagnosed with epilepsy (PWE) received immediate anti‑seizure medication after their first seizure.",
       "evidence": "Of the 146 patients diagnosed with epilepsy (PWE), 135 (92.5%) were treated with ASM. | In our cohort, 156 out of 235 patients (66.4%) received ASM treatment immediately after their first seizure | Twenty one patients, who did not meet the diagnostic criteria for epilepsy (PWNE), treatment was initiated based on individual considerations",
       "citations": [
         {
@@ -319,8 +319,8 @@
       "target_cohort": "Diagnostic Workup",
       "status": "PASS_MATCHED (33.6%, IED)",
       "latency_ms": 8.16,
-      "recommendation": "In patients with a first seizure who meet the new ILAE criteria for epilepsy, routine interictal EEG will demonstrate IED in roughly one\u2011third (**33.6%**) of cases; clinicians should therefore not rely on a negative EEG to exclude epilepsy.",
-      "evidence": "Among patients directly diagnosed with epilepsy (PWE), 33.6% had interictal epileptiform discharges (IED) in EEG. | EEG and imaging were performed in 142 PWE at the \ufb01rst visit, with four having no EEG.",
+      "recommendation": "In patients with a first seizure who meet the new ILAE criteria for epilepsy, routine interictal EEG will demonstrate IED in roughly one‑third (**33.6%**) of cases; clinicians should therefore not rely on a negative EEG to exclude epilepsy.",
+      "evidence": "Among patients directly diagnosed with epilepsy (PWE), 33.6% had interictal epileptiform discharges (IED) in EEG. | EEG and imaging were performed in 142 PWE at the ﬁrst visit, with four having no EEG.",
       "citations": [
         {
           "source": "epilepsies-in-children-young-people-and-adults-pdf-66143780239813.pdf",
@@ -329,7 +329,7 @@
           "section": "Introduction",
           "subsection": null,
           "page": 16,
-          "printed_page": "161",
+          "printed_page": "16",
           "table_title": null,
           "table_markdown": null,
           "score": 0.7624
@@ -416,7 +416,7 @@
           "page": 3,
           "printed_page": "03",
           "table_title": "Table 1",
-          "table_markdown": "|                                              |       |                  |        | n   |           |\n| -------------------------------------------- | ----- | ---------------- | ------ | --- | --------- |\n|                                              |       |                  |        |     | %         |\n| Age, M \u00b1 SD                                  | 56.84 | \u00b1 21,61 years    |        | 235 |           |\n| Sex                                          | Male  |                  |        | 137 | 58.3 41.7 |\n|                                              | Femal | e                |        | 98  |           |\n| Death within follow-up (FU) period           |       |                  |        | 28  | 11.9      |\n| Clinical diagnosis of epilepsy after first s |       | eizure           |        | 146 | 62.1      |\n| Clinical diagnosis of epilepsy following ol  |       | d classification |        | 45  | 19.1      |\n| Epilepsy classification                      |       |                  |        |     |           |\n| Idiopathic generalized                       |       |                  |        | 12  |           |\n| Focal                                        |       |                  |        | 129 |           |\n| Unclassified                                 |       |                  |        | 5   |           |\n| EEG                                          |       |                  |        | 230 | 97.9      |\n| Epileptiform discharges                      |       |                  |        | 51  | 22.2      |\n| Imaging MRI                                  |       | 186 79.1         |        |     |           |\n| Epileptogenic lesion                         |       |                  |        | 59  | 31.7      |\n| Postischemic encephalomalacia                |       |                  |        | 33  |           |\n| Posthemorrhagic encephalomalacia             |       |                  |        | 7   |           |\n| Tumor                                        |       |                  |        | 27  |           |\n| Cortical dysplasia                           |       |                  |        | 3   |           |\n| Hippocampal sclerosis                        |       |                  |        | 1   |           |\n| CCT                                          |       |                  |        | 49  | 20.9      |\n| Epileptogenic lesion                         |       |                  |        | 26  | 53.1      |\n| EEG + MRI/CT                                 |       |                  |        | 230 | 97.9      |\n| Epileptiform discharges + epileptogen        |       | ic lesion        |        | 22  | 9.6       |\n| ASM                                          |       |                  |        |     |           |\n|                                              | ASM   |                  | No ASM |     |           |\n| PWE                                          | 135   |                  | 11     | 146 |           |\n| PWNE                                         | 21    |                  | 68     | 89  |           |\n| Monotherapy                                  |       |                  |        | 147 |           |\n| Combination therapy                          |       |                  |        | 9   |           |\n| Levetiracetam                                |       |                  |        | 98  |           |\n| Lacosamide                                   |       |                  |        | 35  |           |\n| Lamotrigine                                  |       |                  |        | 15  |           |\n| Brivaracetam                                 |       |                  |        | 5   |           |\n| Eslicarbamazepine                            |       |                  |        | 4   |           |\n| Valproic acid                                |       |                  |        | 3   |           |\n| Oxcarbazepine                                |       |                  |        | 1   |           |\n| Clinical presentation of first sei           |       | zure             |        |     |           |\n| Acute symptomatic seizure                    |       |                  |        | 46  | 19.6      |\n| Status epilepticus                           |       |                  |        | 37  | 15.7      |",
+          "table_markdown": "|                                              |       |                  |        | n   |           |\n| -------------------------------------------- | ----- | ---------------- | ------ | --- | --------- |\n|                                              |       |                  |        |     | %         |\n| Age, M ± SD                                  | 56.84 | ± 21,61 years    |        | 235 |           |\n| Sex                                          | Male  |                  |        | 137 | 58.3 41.7 |\n|                                              | Femal | e                |        | 98  |           |\n| Death within follow-up (FU) period           |       |                  |        | 28  | 11.9      |\n| Clinical diagnosis of epilepsy after first s |       | eizure           |        | 146 | 62.1      |\n| Clinical diagnosis of epilepsy following ol  |       | d classification |        | 45  | 19.1      |\n| Epilepsy classification                      |       |                  |        |     |           |\n| Idiopathic generalized                       |       |                  |        | 12  |           |\n| Focal                                        |       |                  |        | 129 |           |\n| Unclassified                                 |       |                  |        | 5   |           |\n| EEG                                          |       |                  |        | 230 | 97.9      |\n| Epileptiform discharges                      |       |                  |        | 51  | 22.2      |\n| Imaging MRI                                  |       | 186 79.1         |        |     |           |\n| Epileptogenic lesion                         |       |                  |        | 59  | 31.7      |\n| Postischemic encephalomalacia                |       |                  |        | 33  |           |\n| Posthemorrhagic encephalomalacia             |       |                  |        | 7   |           |\n| Tumor                                        |       |                  |        | 27  |           |\n| Cortical dysplasia                           |       |                  |        | 3   |           |\n| Hippocampal sclerosis                        |       |                  |        | 1   |           |\n| CCT                                          |       |                  |        | 49  | 20.9      |\n| Epileptogenic lesion                         |       |                  |        | 26  | 53.1      |\n| EEG + MRI/CT                                 |       |                  |        | 230 | 97.9      |\n| Epileptiform discharges + epileptogen        |       | ic lesion        |        | 22  | 9.6       |\n| ASM                                          |       |                  |        |     |           |\n|                                              | ASM   |                  | No ASM |     |           |\n| PWE                                          | 135   |                  | 11     | 146 |           |\n| PWNE                                         | 21    |                  | 68     | 89  |           |\n| Monotherapy                                  |       |                  |        | 147 |           |\n| Combination therapy                          |       |                  |        | 9   |           |\n| Levetiracetam                                |       |                  |        | 98  |           |\n| Lacosamide                                   |       |                  |        | 35  |           |\n| Lamotrigine                                  |       |                  |        | 15  |           |\n| Brivaracetam                                 |       |                  |        | 5   |           |\n| Eslicarbamazepine                            |       |                  |        | 4   |           |\n| Valproic acid                                |       |                  |        | 3   |           |\n| Oxcarbazepine                                |       |                  |        | 1   |           |\n| Clinical presentation of first sei           |       | zure             |        |     |           |\n| Acute symptomatic seizure                    |       |                  |        | 46  | 19.6      |\n| Status epilepticus                           |       |                  |        | 37  | 15.7      |",
           "score": -0.7387
         },
         {
@@ -465,7 +465,7 @@
       "target_cohort": "Treatment Guidelines",
       "status": "PASS_MATCHED (Lamotrigine, Levetiracetam, monotherapy)",
       "latency_ms": 7.83,
-      "recommendation": "Guidelines recommend **lamotrigine or levetiracetam** as the first\u2011line monotherapy for newly diagnosed focal seizures; if the initial choice fails, the alternative should be tried.",
+      "recommendation": "Guidelines recommend **lamotrigine or levetiracetam** as the first‑line monotherapy for newly diagnosed focal seizures; if the initial choice fails, the alternative should be tried.",
       "evidence": "Consider lamotrigine or levetiracetam as first-line monotherapy for people with focal seizures. | If the first choice is unsuccessful, consider the other of these options.",
       "citations": [
         {
@@ -475,7 +475,7 @@
           "section": "Introduction",
           "subsection": "4.6 Discontinuing antiseizure medication",
           "page": 75,
-          "printed_page": "161",
+          "printed_page": "75",
           "table_title": null,
           "table_markdown": null,
           "score": 3.6102
@@ -487,7 +487,7 @@
           "section": "Introduction",
           "subsection": "4.6 Discontinuing antiseizure medication",
           "page": 70,
-          "printed_page": "161",
+          "printed_page": "70",
           "table_title": null,
           "table_markdown": null,
           "score": 1.5435
@@ -523,7 +523,7 @@
           "section": "Introduction",
           "subsection": "treatment",
           "page": 89,
-          "printed_page": "161",
+          "printed_page": "89",
           "table_title": null,
           "table_markdown": null,
           "score": -0.9546
@@ -538,7 +538,7 @@
       "target_cohort": "Ambiguous (Requires Breakdown)",
       "status": "PASS_MATCHED (Total, 66.4%, PWE, 92.5%, PWNE, 23.6%)",
       "latency_ms": 7.07,
-      "recommendation": "I couldn't find enough information to answer this ambiguous query without cohort specification. The indexed study investigates distinct cohorts with vastly different clinical profiles:\n\n\u2022 **Total Cohort (N=235):** 66.4% immediate treatment (156/235), 19.4% 1-year recurrence (43/221).\n\u2022 **Patients With Epilepsy (PWE, N=146, 62.1%):** 92.5% immediate ASM initiation (135/146), 28.0% 1-year recurrence (37/132).\n\u2022 **Patients Without Epilepsy (PWNE, N=89, 37.9%):** 23.6% ASM for individualized reasons (21/89), 5.6% 1-year recurrence rate, 100% of recurrences occurred within \u2264 6 months (0% at 6-12 months).\n\nPlease specify whether you are querying the overall cohort (N=235), PWE cohort (N=146), or PWNE cohort (N=89).",
+      "recommendation": "I couldn't find enough information to answer this ambiguous query without cohort specification. The indexed study investigates distinct cohorts with vastly different clinical profiles:\n\n• **Total Cohort (N=235):** 66.4% immediate treatment (156/235), 19.4% 1-year recurrence (43/221).\n• **Patients With Epilepsy (PWE, N=146, 62.1%):** 92.5% immediate ASM initiation (135/146), 28.0% 1-year recurrence (37/132).\n• **Patients Without Epilepsy (PWNE, N=89, 37.9%):** 23.6% ASM for individualized reasons (21/89), 5.6% 1-year recurrence rate, 100% of recurrences occurred within ≤ 6 months (0% at 6-12 months).\n\nPlease specify whether you are querying the overall cohort (N=235), PWE cohort (N=146), or PWNE cohort (N=89).",
       "evidence": "",
       "citations": [],
       "confidence": "insufficient"
@@ -550,7 +550,7 @@
       "target_cohort": "Ambiguous (Requires Breakdown)",
       "status": "PASS_MATCHED (19.4%, 28.0%, 5.6%)",
       "latency_ms": 7.17,
-      "recommendation": "I couldn't find enough information to answer this ambiguous query without cohort specification. The indexed study investigates distinct cohorts with vastly different clinical profiles:\n\n\u2022 **Total Cohort (N=235):** 66.4% immediate treatment (156/235), 19.4% 1-year recurrence (43/221).\n\u2022 **Patients With Epilepsy (PWE, N=146, 62.1%):** 92.5% immediate ASM initiation (135/146), 28.0% 1-year recurrence (37/132).\n\u2022 **Patients Without Epilepsy (PWNE, N=89, 37.9%):** 23.6% ASM for individualized reasons (21/89), 5.6% 1-year recurrence rate, 100% of recurrences occurred within \u2264 6 months (0% at 6-12 months).\n\nPlease specify whether you are querying the overall cohort (N=235), PWE cohort (N=146), or PWNE cohort (N=89).",
+      "recommendation": "I couldn't find enough information to answer this ambiguous query without cohort specification. The indexed study investigates distinct cohorts with vastly different clinical profiles:\n\n• **Total Cohort (N=235):** 66.4% immediate treatment (156/235), 19.4% 1-year recurrence (43/221).\n• **Patients With Epilepsy (PWE, N=146, 62.1%):** 92.5% immediate ASM initiation (135/146), 28.0% 1-year recurrence (37/132).\n• **Patients Without Epilepsy (PWNE, N=89, 37.9%):** 23.6% ASM for individualized reasons (21/89), 5.6% 1-year recurrence rate, 100% of recurrences occurred within ≤ 6 months (0% at 6-12 months).\n\nPlease specify whether you are querying the overall cohort (N=235), PWE cohort (N=146), or PWNE cohort (N=89).",
       "evidence": "",
       "citations": [],
       "confidence": "insufficient"
@@ -622,7 +622,7 @@
       "target_cohort": "SUDEP Risk Stratification",
       "status": "PASS_MATCHED (adherence)",
       "latency_ms": 7.58,
-      "recommendation": "10 Reducing the risk of epilepsy-related \ndeath including sudden unexpected death \nin epilepsy\n\n10. 1 \nBe aware that epilepsy is associated with an increased risk of premature death, \nincluding a risk of sudden unexpected death in epilepsy (SUDEP). 2 \nBe aware that potentially modifiable risk factors for SUDEP include:\n\n\u2022 non-adherence to medication\n\n\u2022 alcohol and drug misuse\n\n\u2022 having focal to bilateral tonic-clonic seizures or generalised tonic-clonic \nseizures\n\n\u2022 having uncontrolled seizures\n\n\u2022 living alone\n\n\u2022 sleeping alone without supervision.",
+      "recommendation": "10 Reducing the risk of epilepsy-related \ndeath including sudden unexpected death \nin epilepsy\n\n10. 1 \nBe aware that epilepsy is associated with an increased risk of premature death, \nincluding a risk of sudden unexpected death in epilepsy (SUDEP). 2 \nBe aware that potentially modifiable risk factors for SUDEP include:\n\n• non-adherence to medication\n\n• alcohol and drug misuse\n\n• having focal to bilateral tonic-clonic seizures or generalised tonic-clonic \nseizures\n\n• having uncontrolled seizures\n\n• living alone\n\n• sleeping alone without supervision.",
       "evidence": "10 Reducing the risk of epilepsy-related \ndeath including sudden unexpected death \nin epilepsy\n\n10",
       "citations": [
         {
@@ -632,7 +632,7 @@
           "section": "Introduction",
           "subsection": "treatment",
           "page": 136,
-          "printed_page": "161",
+          "printed_page": "136",
           "table_title": null,
           "table_markdown": null,
           "score": 8.0777
@@ -644,7 +644,7 @@
           "section": "Introduction",
           "subsection": "treatment",
           "page": 138,
-          "printed_page": "161",
+          "printed_page": "138",
           "table_title": null,
           "table_markdown": null,
           "score": 5.8383
@@ -680,7 +680,7 @@
           "section": "Introduction",
           "subsection": "treatment",
           "page": 139,
-          "printed_page": "161",
+          "printed_page": "139",
           "table_title": null,
           "table_markdown": null,
           "score": 4.7527

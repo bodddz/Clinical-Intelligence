@@ -4,39 +4,53 @@
 
 ---
 
-## 📁 Clean System Directory Structure
+## 📁 Production Directory Structure
 
 ```
 c:\Ctrl Cure\RA_2\
-├── data/
-│   └── research_papers/                      # Indexed Clinical Guidelines & Manuscripts (13 PDFs)
-│       ├── fneur-16-1564680.pdf              # Primary Baseline (First Seizure Cohort N=235)
-│       ├── AES_SUDEP_Position_Statement_2019.pdf
-│       ├── CHILDApril6withfigs.pdf
-│       ├── EPI4-9-1233.pdf
-│       ├── epilepsies-in-children-young-people-and-adults-pdf-66143780239813.pdf
-│       ├── epilepsies-in-children-young-people-and-adults-pdf-75547469853637.pdf
-│       ├── fphar-16-1584566_2.pdf
-│       ├── main.pdf
-│       ├── nihms-1820930.pdf
-│       ├── nihms-1926719.pdf
-│       ├── onset-in-neonates-and-infants2.pdf
-│       ├── PIIS0140673621002464 (1).pdf
-│       └── WNL-2023-005941.pdf
-├── uploads/                                  # Runtime storage for dynamic UI PDF uploads
-├── backend/                                  # Production Backend Engine
+├── api/                                      # Vercel Serverless ASGI Entrypoint
+│   └── index.py                              # Cold-boot pre-warming & FastAPI adapter
+├── backend/                                  # Production Clinical Intelligence Engine
 │   ├── __init__.py                           # Python package initialization
-│   ├── main.py                               # FastAPI server, REST routes & PDF streamer
-│   ├── pipeline.py                           # 4-Tier Safety Gating, Hybrid BGE+BM25, & Synthesizer
-│   ├── evaluate.py                           # Standalone 100-Point Benchmark Suite (8 Ground-Truth Scenarios)
-│   └── clinical_audit_log.jsonl              # Governance audit trail logs
-├── frontend/                                 # Zero-Clutter Pure OLED UI Client
+│   ├── main.py                               # FastAPI REST application, v2 schemas, endpoints & static mount
+│   ├── pipeline.py                           # ClinicalRAGPipeline: Parser, Hybrid Fusion (BM25+Dense), Synthesizer
+│   ├── guardrails.py                         # SafetyGateRouter & ConversationalIntentRouter (Gates -1 to 3)
+│   ├── evaluate.py                           # 24-Scenario Clinical Benchmark Suite (P@3, CiteAcc, Faithfulness)
+│   ├── benchmark_ablation.py                 # 16-Scenario 4-Stage Architectural Ablation Study
+│   ├── ablation_results.json                 # Pre-computed ablation metric baseline
+│   └── live_benchmark_results.json           # Cached 16-scenario live evaluation report
+├── frontend/                                 # Production Pure OLED Web Application
 │   ├── index.html                            # Minimalist conversational layout with Collapsible Drawer
 │   ├── style.css                             # Pure OLED Black (#000000) & Glassmorphism Design System
-│   └── app.js                                # Pure ES6+ Client, Multi-PDF Ingestion, & Instant Replay
-├── requirements.txt                          # Production Python dependencies
+│   └── app.js                                # Pure ES6+ Client, Multi-PDF Ingestion, Citations & Telemetry
+├── public/                                   # Static Assets & Fallback Client
+│   ├── index.html, style.css, app.js         # Production client bundles
+│   └── fneur-16-1564680.pdf                  # Core baseline research paper for in-browser PDF viewer
+├── data/                                     # Clinical Knowledge Base & Preindexed Chunks
+│   ├── preindexed_chunks.json                # 492 pre-parsed & indexed chunks for sub-millisecond cold boot
+│   └── research_papers/                      # 13 Indexed Clinical Guidelines & Manuscripts (PDFs)
+│       ├── fneur-16-1564680.pdf              # Primary Baseline (First Seizure Cohort N=235)
+│       ├── epilepsies-in-children-young-people-and-adults-pdf-66143780239813.pdf (NICE NG217)
+│       ├── epilepsies-in-children-young-people-and-adults-pdf-75547469853637.pdf (NICE QS211)
+│       ├── AES_SUDEP_Position_Statement_2019.pdf
+│       ├── PIIS0140673621002464 (1).pdf      # Lancet Neurology Status Epilepticus Guideline
+│       ├── WNL-2023-005941.pdf               # AAN Practice Guideline
+│       └── ... (7 additional pediatric & clinical guidelines)
+├── docs/                                     # Clinical Defense, Pitch, & System Architecture Guides
+│   ├── 01_PITCH_DECK_10_SLIDES.md            # 10-slide competitive pitch deck
+│   ├── 02_LIVE_DEMO_2MIN_SCRIPT.md           # 2-minute live demo script
+│   ├── 03_TOP_10_JUDGES_QA.md                # Anticipated technical and clinical judge Q&A
+│   ├── 04_SYSTEM_ARCHITECTURE_CHEATSHEET.md  # Deep technical architecture reference
+│   └── 05_MOCK_DEFENSE_SIMULATION.md         # Full mock defense transcript
+├── uploads/                                  # Runtime dynamic PDF upload and indexing directory
+├── archive/                                  # Archived legacy monolithic drafts
+│   └── untitled2_legacy_monolith.py
+├── .env.example                              # Template environment configuration
+├── requirements.txt                          # Production runtime dependencies
+├── requirements-all.txt                      # Offline local transformer dependencies
 ├── run.bat                                   # One-click Windows runner
-└── README.md                                 # Architecture & clinical reference
+├── push.bat                                  # One-click GitHub push script
+└── vercel.json                               # Vercel serverless deployment specification
 ```
 
 ---
@@ -53,19 +67,25 @@ c:\Ctrl Cure\RA_2\
 
 ---
 
-## ⚡ 4-Tier Safety Guardrails
+## ⚡ 6-Tier Clinical Safety Guardrail Architecture
 
 ```mermaid
 flowchart TD
-    Q[Clinical Query] --> Gate0{Gate 0: Ambiguity Gate}
+    Q[Clinical Query] --> Gneg1{Gate -1: Non-Clinical Router}
+    Gneg1 -- Greetings / Small-talk / Capabilities --> RespConv[Deterministic Conversational Response]
+    Gneg1 -- Clinical Query --> Gneg05{Gate -0.5: Prompt Injection & Tail Defense}
+    Gneg05 -- Prompt Injection / Adversarial Directives --> RefusalInj[SAFE_REFUSAL: Injection Blocked]
+    Gneg05 -- Clean Query --> Gate0{Gate 0: Clinical Ambiguity Gate}
     Gate0 -- Vague query e.g. 'treatment rate' --> Refusal0[SAFE_REFUSAL: Request Cohort Disambiguation]
-    Gate0 -- Specific query --> Gate2{Gate 2: Out-Of-Domain Gate}
-    Gate2 -- Diabetes / Surgical Resection --> Refusal2[SAFE_REFUSAL: Strict Medical Boundary Refusal]
+    Gate0 -- Specific query --> Gate2{Gate 2: Trauma / Emergency / OOD Gate}
+    Gate2 -- Acute Trauma / Endocrinology / OOD --> Refusal2[SAFE_REFUSAL: Strict Clinical Scope Refusal]
     Gate2 -- In-Domain Clinical Query --> Ret[Dense BGE + Sparse BM25 RRF Retrieval]
     Ret --> Gate1{Gate 1: Relevance Score >= Threshold}
-    Gate1 -- Low score --> Refusal1[SAFE_REFUSAL: Insufficient Evidence in Guideline]
+    Gate1 -- Low relevance score --> Refusal1[SAFE_REFUSAL: Insufficient Evidence in Indexed Corpus]
     Gate1 -- High score --> CE[Cross-Encoder Re-Ranking]
-    CE --> Synth[Structured Grounded Synthesis + Exact Page Citations]
+    CE --> Synth[Structured Grounded Synthesis: Gemini / Grok v2 Schema]
+    Synth --> Gate3{Gate 3: Post-Gen Cohort Integrity Check}
+    Gate3 -- PWE vs PWNE stats verified --> FinalResp[Audited Clinical Response with Verbatim PDF Citations]
 ```
 
 ---
