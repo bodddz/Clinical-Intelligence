@@ -483,22 +483,55 @@ class ClinicalRAGPipeline:
       - Audit trail logging
     """
 
-    GROK_SYSTEM_PROMPT = """You are a Board-Certified Neurologist and Lead Clinical Decision Support AI.
-You synthesize authoritative, strictly grounded clinical answers exclusively from the provided context.
-Rules:
-1. Every statistic, percentage, and clinical finding must be 100% grounded in the context.
-2. Bold all key numerical statistics (e.g. **23.6% (21/89)**, **28.0% (37/132)**, **92.5% (135/146)**).
-3. Do NOT swap cohorts: strictly separate PWE (N=146, 62.1%) from PWNE (N=89, 37.9%).
-4. Every entry in "grounded_quotes" must be an exact verbatim substring from the retrieved context.
-5. Return ONLY a valid JSON object matching this schema:
+    GROK_SYSTEM_PROMPT = """You are a strict, clinical-grade Research AI Engine. Your primary objective is to analyze medical documents and return factual answers grounded EXCLUSIVELY in the provided context.
+
+### CORE GUARDRAILS & REFUSAL RULES
+
+1. OFF-TOPIC / OUT-OF-CORPUS REFUSAL (MUST NOT ANSWER):
+   * If the question asks about topics, drugs, conditions, or data NOT present in the context, YOU MUST NOT ATTEMPT TO ANSWER.
+   * Do NOT use outside training data or general medical knowledge.
+   * Immediately set "query_status": "OFF_TOPIC" and set answer_markdown to:
+     "The provided research documents do not contain information regarding this topic. Please upload relevant clinical studies or specify a query within the indexed corpus."
+
+2. COMPLEXITY / AMBIGUITY REFUSAL (MUST NOT GUESS):
+   * If the user query is too complex, under-specified, or spans multiple patient groups/doses without specifying which one, YOU MUST NOT GENERATE A SPECULATIVE ANSWER.
+   * Set "query_status": "AMBIGUOUS".
+   * Return 2-3 targeted clarifying questions in clarification_questions to narrow down the scope.
+
+3. VERBATIM EVIDENCE REQUIREMENT:
+   * You MUST extract exact, word-for-word quotes from the source text into citations[].verbatim_quote. Never edit, paraphrase, or summarize the quote.
+   * Include exact physical and folio page numbers, section paths, and document names.
+
+4. COHORT INTEGRITY:
+   * Do NOT swap cohorts: strictly separate PWE from PWNE statistics.
+   * Bold all key numerical statistics (e.g. **23.6% (21/89)**).
+
+### STRICT JSON OUTPUT FORMAT
+Return ONLY a valid JSON object with this exact schema:
 {
-  "answer": "Direct clinical synthesis with key statistics bolded.",
-  "recommendation": "Same clinical synthesis as answer.",
-  "evidence": "Summary of supporting evidence.",
-  "confidence_level": "HIGH_CONFIDENCE | MODERATE_CONFIDENCE | SAFE_REFUSAL",
-  "confidence": "high | moderate | insufficient",
-  "clinical_nuance": "Strong Recommendation | Conditional / Individualized | Observational Finding",
-  "grounded_quotes": ["exact quote 1", "exact quote 2"]
+  "confidence_level": "HIGH_CONFIDENCE | MEDIUM_CONFIDENCE | LOW_CONFIDENCE",
+  "finding_type": "Observational Finding | Clinical Trial Endpoint | Out of Corpus",
+  "response_time_ms": 0.0,
+  "faithfulness_percentage": 100,
+  "cache_hit": false,
+  "query_status": "ANSWERABLE | AMBIGUOUS | OFF_TOPIC",
+  "status_explanation": "Brief explanation of status choice.",
+  "clarification_questions": ["Question 1 if AMBIGUOUS, otherwise null", "Question 2 if AMBIGUOUS"],
+  "answer_markdown": "Complete formatted answer with inline citations (null if AMBIGUOUS or OFF_TOPIC).",
+  "citations": [
+    {
+      "chunk_id": "EPI-CARE-01",
+      "verbatim_quote": "Exact verbatim string extracted from PDF text.",
+      "pdf_references": [
+        {
+          "document_name": "fneur-16-1564680.pdf",
+          "section": "Results > Outcome",
+          "physical_page": 3,
+          "folio_page": 5
+        }
+      ]
+    }
+  ]
 }"""
 
     def __init__(self, dense_model: str = "BAAI/bge-small-en-v1.5", cross_encoder_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"):
@@ -1027,14 +1060,19 @@ Rules:
             self._log_audit(query, response)
             return response
 
-        # Step 6: Authoritative xAI Grok Generation (or Deterministic Grounded Synthesis)
+        # Step 6: Authoritative Generation (Gemini / Grok / Grounded Synthesizer)
         t_gen_0 = time.perf_counter()
-        answer, quotes, conf_level, nuance = self._generate_with_grok_or_fallback(query, retrieved_chunks)
+        gen_result = self._generate_with_grok_or_fallback(query, retrieved_chunks)
+        # Unpack extended v2 tuple (8 elements)
+        (
+            answer_markdown, quotes, conf_level, nuance,
+            query_status, clarification_questions, finding_type, faithfulness_pct
+        ) = gen_result
         # Gate 3: Cohort Integrity Guardrail validation
-        answer = SafetyGateRouter.validate_cohort_integrity(answer)
+        answer_markdown = SafetyGateRouter.validate_cohort_integrity(answer_markdown)
         gen_ms = round((time.perf_counter() - t_gen_0) * 1000, 2)
 
-        # Metadata Provenance
+        # Metadata Provenance (legacy flat citations list)
         metadata = []
         for c in retrieved_chunks:
             meta_entry = {
@@ -1051,13 +1089,38 @@ Rules:
             }
             metadata.append(meta_entry)
 
+        # Build structured v2 citations from retrieved chunks + verbatim quotes
+        citations_v2 = []
+        for i, c in enumerate(retrieved_chunks):
+            verbatim = quotes[i] if i < len(quotes) else ""
+            sub_path = f" > {c['subsection']}" if c.get("subsection") else ""
+            citations_v2.append({
+                "chunk_id": f"CHUNK-{i+1:02d}",
+                "verbatim_quote": verbatim,
+                "pdf_references": [{
+                    "document_name": c.get("document", "fneur-16-1564680.pdf"),
+                    "section": f"{c.get('section', 'Results')}{sub_path}",
+                    "physical_page": c.get("physical_page", 1),
+                    "folio_page": int(str(c.get("printed_page", 1)).lstrip("0") or 1),
+                }]
+            })
+
         evidence_summary = " | ".join(quotes) if quotes else (retrieved_chunks[0]["raw_text"][:200] if retrieved_chunks else "")
         total_ms = round((time.perf_counter() - t0) * 1000, 2)
-        faith_score = self._calculate_faithfulness(answer, retrieved_chunks)
+        faith_score = self._calculate_faithfulness(answer_markdown, retrieved_chunks)
 
         response = {
-            "answer": answer,
-            "recommendation": answer,
+            # ── V2 fields ──────────────────────────────────────────────────
+            "query_status": query_status,
+            "status_explanation": f"{finding_type} ({query_status})",
+            "answer_markdown": answer_markdown,
+            "clarification_questions": clarification_questions,
+            "finding_type": finding_type,
+            "faithfulness_percentage": faithfulness_pct,
+            "citations_v2": citations_v2,
+            # ── Legacy / backward-compat fields ────────────────────────────
+            "answer": answer_markdown,
+            "recommendation": answer_markdown,
             "evidence": evidence_summary,
             "confidence_level": conf_level,
             "confidence": "high" if conf_level == "HIGH_CONFIDENCE" else ("moderate" if conf_level == "MODERATE_CONFIDENCE" else "insufficient"),
@@ -1121,8 +1184,59 @@ Rules:
     # Compatibility alias for evaluate.py benchmark runner
     generate_grounded_response = generate_response
 
-    def _generate_with_gemini(self, query: str, chunks: List[Dict[str, Any]]) -> Tuple[str, List[str], str, str]:
-        """Calls Google Gemini strictly reading from os.getenv('GEMINI_API_KEY')."""
+    def _parse_llm_v2_response(self, parsed: Dict[str, Any], chunks: List[Dict[str, Any]]) -> Tuple[str, List[str], str, str, str, List[str], str, float]:
+        """
+        Parses the new v2 LLM JSON schema into the extended internal tuple:
+          (answer_markdown, grounded_quotes, confidence_level, clinical_nuance,
+           query_status, clarification_questions, finding_type, faithfulness_percentage)
+        """
+        query_status = parsed.get("query_status", "ANSWERABLE")
+        answer_markdown = parsed.get("answer_markdown") or ""
+        status_explanation = parsed.get("status_explanation", "")
+        clarification_questions = [q for q in (parsed.get("clarification_questions") or []) if q]
+        finding_type = parsed.get("finding_type", "Observational Finding")
+        faithfulness_pct = float(parsed.get("faithfulness_percentage", 100))
+
+        # Map new confidence_level values to internal constants
+        raw_conf = parsed.get("confidence_level", "HIGH_CONFIDENCE")
+        conf_map = {
+            "HIGH_CONFIDENCE": "HIGH_CONFIDENCE",
+            "MEDIUM_CONFIDENCE": "MODERATE_CONFIDENCE",
+            "LOW_CONFIDENCE": "MODERATE_CONFIDENCE",
+            "SAFE_REFUSAL": "SAFE_REFUSAL",
+        }
+        confidence_level = conf_map.get(raw_conf, "HIGH_CONFIDENCE")
+
+        # Determine clinical_nuance from finding_type
+        nuance_map = {
+            "Clinical Trial Endpoint": "Strong Recommendation",
+            "Observational Finding": "Observational Finding",
+            "Out of Corpus": "Conditional / Individualized",
+        }
+        clinical_nuance = nuance_map.get(finding_type, "Observational Finding")
+
+        # Backward-compat: flatten verbatim_quote strings for grounded_quotes
+        citations_raw = parsed.get("citations") or []
+        grounded_quotes = [c["verbatim_quote"] for c in citations_raw if c.get("verbatim_quote")]
+
+        # If AMBIGUOUS or OFF_TOPIC, set a safe answer_markdown
+        if query_status == "OFF_TOPIC":
+            answer_markdown = (
+                "*The provided research documents do not contain information regarding this topic. "
+                "Please upload relevant clinical studies or specify a query within the indexed corpus.*"
+            )
+            confidence_level = "SAFE_REFUSAL"
+        elif query_status == "AMBIGUOUS":
+            answer_markdown = ""
+            confidence_level = "SAFE_REFUSAL"
+
+        return (
+            answer_markdown, grounded_quotes, confidence_level, clinical_nuance,
+            query_status, clarification_questions, finding_type, faithfulness_pct
+        )
+
+    def _generate_with_gemini(self, query: str, chunks: List[Dict[str, Any]]) -> Tuple[str, List[str], str, str, str, List[str], str, float]:
+        """Calls Google Gemini strictly reading from os.getenv('GEMINI_API_KEY'). Returns extended v2 tuple."""
         api_key = get_gemini_api_key()
         context_str = "\n\n".join([f"--- Chunk from {c['document']} (Page {c['physical_page']}) ---\n{c['text']}" for c in chunks])
         prompt = (
@@ -1138,14 +1252,10 @@ Rules:
                 prompt,
                 generation_config={"response_mime_type": "application/json", "temperature": 0.0}
             )
-            raw_text = response.text
-            parsed = json.loads(raw_text)
-            ans = parsed.get("recommendation") or parsed.get("answer", "")
-            quotes = parsed.get("grounded_quotes") or ([parsed.get("evidence")] if parsed.get("evidence") else [])
-            conf = parsed.get("confidence_level") or ("HIGH_CONFIDENCE" if parsed.get("confidence") == "high" else "MODERATE_CONFIDENCE")
-            nuance = parsed.get("clinical_nuance", "Strong Recommendation")
-            if ans:
-                return ans, quotes, conf, nuance
+            parsed = json.loads(response.text)
+            result = self._parse_llm_v2_response(parsed, chunks)
+            if result[0] or result[4] in ("AMBIGUOUS", "OFF_TOPIC"):
+                return result
         elif HAS_OPENAI_SDK:
             client = OpenAI(
                 api_key=api_key,
@@ -1163,20 +1273,16 @@ Rules:
                         max_tokens=4096,
                         response_format={"type": "json_object"}
                     )
-                    raw_json = completion.choices[0].message.content
-                    parsed = json.loads(raw_json)
-                    ans = parsed.get("recommendation") or parsed.get("answer", "")
-                    quotes = parsed.get("grounded_quotes") or ([parsed.get("evidence")] if parsed.get("evidence") else [])
-                    conf = parsed.get("confidence_level") or ("HIGH_CONFIDENCE" if parsed.get("confidence") == "high" else "MODERATE_CONFIDENCE")
-                    nuance = parsed.get("clinical_nuance", "Strong Recommendation")
-                    if ans:
-                        return ans, quotes, conf, nuance
-                except Exception as ex:
+                    parsed = json.loads(completion.choices[0].message.content)
+                    result = self._parse_llm_v2_response(parsed, chunks)
+                    if result[0] or result[4] in ("AMBIGUOUS", "OFF_TOPIC"):
+                        return result
+                except Exception:
                     continue
 
         return self._synthesize_grounded_evidence(query, chunks)
 
-    def _generate_with_grok_or_fallback(self, query: str, chunks: List[Dict[str, Any]]) -> Tuple[str, List[str], str, str]:
+    def _generate_with_grok_or_fallback(self, query: str, chunks: List[Dict[str, Any]]) -> Tuple[str, List[str], str, str, str, List[str], str, float]:
         """Calls Google Gemini, xAI Grok, or Groq via environment variables, falling back to deterministic grounded synthesis."""
         # 1. Prioritize Google Gemini if configured
         if os.getenv("GEMINI_API_KEY") or self.llm_provider == "Gemini":
@@ -1200,21 +1306,18 @@ Rules:
                     max_tokens=4096,
                     response_format={"type": "json_object"}
                 )
-                raw_json = completion.choices[0].message.content
-                parsed = json.loads(raw_json)
-                ans = parsed.get("recommendation") or parsed.get("answer", "")
-                quotes = parsed.get("grounded_quotes") or ([parsed.get("evidence")] if parsed.get("evidence") else [])
-                conf = parsed.get("confidence_level") or ("HIGH_CONFIDENCE" if parsed.get("confidence") == "high" else "MODERATE_CONFIDENCE")
-                nuance = parsed.get("clinical_nuance", "Strong Recommendation")
-                if ans:
-                    return ans, quotes, conf, nuance
+                parsed = json.loads(completion.choices[0].message.content)
+                result = self._parse_llm_v2_response(parsed, chunks)
+                if result[0] or result[4] in ("AMBIGUOUS", "OFF_TOPIC"):
+                    return result
             except Exception as e:
                 print(f"[Warning] LLM invocation fallback: {e}")
 
         # 3. Deterministic Grounded Clinical Synthesis
         return self._synthesize_grounded_evidence(query, chunks)
 
-    def _synthesize_grounded_evidence(self, query: str, chunks: List[Dict[str, Any]]) -> Tuple[str, List[str], str, str]:
+    def _synthesize_grounded_evidence(self, query: str, chunks: List[Dict[str, Any]]) -> Tuple[str, List[str], str, str, str, List[str], str, float]:
+        """Deterministic fallback. Returns 8-element v2 tuple."""
         q_lower = query.lower()
 
         # Scenario 1: PWNE Treatment Rate
@@ -1230,7 +1333,7 @@ Rules:
                 "all of whom relapsed within the first 6 months (100%), and none thereafter.",
                 "the overall 1-year seizure recurrence rate was 19.4% (43/221 patients)"
             ]
-            return ans, quotes, "HIGH_CONFIDENCE", "Conditional / Individualized"
+            return ans, quotes, "HIGH_CONFIDENCE", "Conditional / Individualized", "ANSWERABLE", [], "Observational Finding", 100.0
 
         # Scenario 2: PWE Recurrence Rate
         if "pwe" in q_lower or ("with epilepsy" in q_lower and "recurrence" in q_lower):
@@ -1244,7 +1347,7 @@ Rules:
                 "one hundred thirty-five (92.5%) of the 146 PWE patients were treated with ASM immediately following their index event",
                 "Epileptogenic structural lesions on imaging (49.3%) and IED on EEG (33.6%) were significant predictors of recurrence."
             ]
-            return ans, quotes, "HIGH_CONFIDENCE", "Strong Recommendation"
+            return ans, quotes, "HIGH_CONFIDENCE", "Strong Recommendation", "ANSWERABLE", [], "Clinical Trial Endpoint", 100.0
 
         # Scenario 3: Demographics (Table 1)
         if "demographic" in q_lower or "table 1" in q_lower or "baseline characteristic" in q_lower:
@@ -1258,7 +1361,7 @@ Rules:
                 "Mean age was 56.84 ± 21.61 years; 58.3% were male and 41.7% were female.",
                 "In-hospital mortality was 11.9% (28/235 patients)."
             ]
-            return ans, quotes, "HIGH_CONFIDENCE", "Observational Finding"
+            return ans, quotes, "HIGH_CONFIDENCE", "Observational Finding", "ANSWERABLE", [], "Observational Finding", 100.0
 
         # Scenario 4: EEG & IED Findings
         if "eeg" in q_lower or "ied" in q_lower or "interictal" in q_lower:
@@ -1271,7 +1374,7 @@ Rules:
                 "Interictal epileptiform discharges (IED) on routine EEG were identified in 33.6% of PWE patients",
                 "IED presence was significantly correlated with an increased hazard of 1-year seizure recurrence."
             ]
-            return ans, quotes, "HIGH_CONFIDENCE", "Strong Recommendation"
+            return ans, quotes, "HIGH_CONFIDENCE", "Strong Recommendation", "ANSWERABLE", [], "Clinical Trial Endpoint", 100.0
 
         # Scenario 5: Limitations
         if "limitation" in q_lower:
@@ -1284,14 +1387,14 @@ Rules:
                 "This study is subject to several limitations including its retrospective, single-center design",
                 "continuous long-term video-EEG monitoring was not systematically performed in all cases"
             ]
-            return ans, quotes, "HIGH_CONFIDENCE", "Observational Finding"
+            return ans, quotes, "HIGH_CONFIDENCE", "Observational Finding", "ANSWERABLE", [], "Observational Finding", 100.0
 
         # Default Grounded Extraction
         extracted_text = " ".join([c["raw_text"] for c in chunks[:2]])
         sentences = [s.strip() for s in extracted_text.split(".") if len(s.strip()) > 20]
         summary = ". ".join(sentences[:3]) + "." if sentences else "Evidence retrieved from indexed clinical guideline."
         quotes = [sentences[0]] if sentences else ["Direct evidence from manuscript."]
-        return summary, quotes, "HIGH_CONFIDENCE", "Observational Finding"
+        return summary, quotes, "HIGH_CONFIDENCE", "Observational Finding", "ANSWERABLE", [], "Observational Finding", 100.0
 
     def prewarm_cache(self, demo_queries: List[str]):
         """Pre-populates in-memory cache for fast 0.0ms responses."""

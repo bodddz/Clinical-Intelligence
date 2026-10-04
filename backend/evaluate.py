@@ -449,22 +449,3 @@ if __name__ == "__main__":
     pipe = ClinicalRAGPipeline()
     pipe.process_and_index(parsed)
     run_benchmark(pipe)
-
-
-
-if __name__ == "__main__":
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    data_dir = os.path.join(base_dir, "data", "research_papers")
-    
-    pdf_path = os.environ.get("PDF_PATH", "fneur-16-1564680.pdf")
-    if not os.path.isabs(pdf_path):
-        for candidate in [os.path.join(data_dir, pdf_path), os.path.join(base_dir, pdf_path)]:
-            if os.path.exists(candidate):
-                pdf_path = candidate
-                break
-
-    parser = MedicalPDFParser(pdf_path)
-    parsed = parser.parse()
-    pipe = ClinicalRAGPipeline()
-    pipe.process_and_index(parsed)
-    run_benchmark(pipe)

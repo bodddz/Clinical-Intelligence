@@ -180,6 +180,7 @@ class QueryRequest(BaseModel):
 
 
 class CitationMetadata(BaseModel):
+    """Legacy flat citation provenance (backward compat)."""
     source: Optional[str] = None
     source_type: str
     document: str
@@ -190,6 +191,21 @@ class CitationMetadata(BaseModel):
     table_title: Optional[str] = None
     table_markdown: Optional[str] = None
     score: float
+
+
+class PdfReference(BaseModel):
+    """Physical PDF location within a structured citation."""
+    document_name: str
+    section: str
+    physical_page: int
+    folio_page: int
+
+
+class CitationV2(BaseModel):
+    """Structured v2 citation with verbatim evidence and full provenance."""
+    chunk_id: str
+    verbatim_quote: str
+    pdf_references: List[PdfReference] = Field([], description="Ordered list of PDF provenance references")
 
 
 class Telemetry(BaseModel):
@@ -205,11 +221,20 @@ class Telemetry(BaseModel):
 
 
 class QueryResponse(BaseModel):
-    recommendation: str = Field(..., description="Primary clinical recommendation")
+    # ── V2 fields ──────────────────────────────────────────────────────────
+    query_status: str = Field("ANSWERABLE", description="ANSWERABLE | AMBIGUOUS | OFF_TOPIC")
+    status_explanation: Optional[str] = Field(None, description="Brief explanation of query_status")
+    answer_markdown: Optional[str] = Field(None, description="Primary answer in Markdown (null if AMBIGUOUS/OFF_TOPIC)")
+    clarification_questions: List[str] = Field([], description="Clarifying questions when query_status=AMBIGUOUS")
+    finding_type: str = Field("Observational Finding", description="Observational Finding | Clinical Trial Endpoint | Out of Corpus")
+    faithfulness_percentage: float = Field(100.0, description="LLM-reported faithfulness 0–100")
+    citations_v2: List[CitationV2] = Field([], description="Structured v2 citations with verbatim quotes and provenance")
+    # ── Legacy / backward-compat fields ────────────────────────────────────
+    recommendation: str = Field("", description="Legacy: same as answer_markdown")
     evidence: str = Field("", description="Evidence summary")
     confidence: str = Field("high", description="Confidence: high | moderate | insufficient")
-    citations: List[CitationMetadata] = Field([], description="Citation provenance list")
-    answer: Optional[str] = Field(None, description="Legacy: same as recommendation")
+    citations: List[CitationMetadata] = Field([], description="Legacy flat citation provenance list")
+    answer: Optional[str] = Field(None, description="Legacy: same as answer_markdown")
     confidence_level: str = Field("HIGH_CONFIDENCE", description="Legacy confidence level")
     clinical_nuance: str = Field("Observational Finding")
     grounded_quotes: List[str] = Field([])
