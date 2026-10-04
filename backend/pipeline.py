@@ -261,13 +261,27 @@ class MedicalPDFParser:
         return y0 < top_thresh or y1 > bot_thresh
 
     def _extract_printed_page(self, margin_blocks: List[Any], physical_page: int) -> str:
+        """
+        Extracts the printed folio page number from PDF margin blocks.
+        Scans ALL margin blocks and picks the LAST valid standalone integer found
+        (footer numbers are more reliable than repeated header numbers).
+        Falls back to physical_page if no valid margin number is found.
+        """
+        candidates = []
         for b in margin_blocks:
             txt = b[4].strip()
+            # Must be a standalone integer (no surrounding text)
             m = re.match(r"^0?([1-9]\d*)$", txt)
             if m:
                 val = int(m.group(1))
-                if 1 <= val <= 200:
-                    return f"{val:02d}"
+                if 1 <= val <= 500:  # extended upper bound for large guideline PDFs
+                    # Use y-position to prefer footer over header
+                    y_pos = b[1]  # top-y of block
+                    candidates.append((y_pos, val))
+        if candidates:
+            # Prefer the bottom-most candidate (highest y) = footer page number
+            candidates.sort(key=lambda c: c[0], reverse=True)
+            return f"{candidates[0][1]:02d}"
         return f"{physical_page:02d}"
 
     def parse(self) -> Dict[str, Any]:
@@ -1094,6 +1108,9 @@ Return ONLY a valid JSON object with this exact schema:
         for i, c in enumerate(retrieved_chunks):
             verbatim = quotes[i] if i < len(quotes) else ""
             sub_path = f" > {c['subsection']}" if c.get("subsection") else ""
+            # Safe folio cast: handle "00", "", or non-numeric printed_page gracefully
+            raw_folio = str(c.get("printed_page", "")).strip().lstrip("0")
+            folio_int = int(raw_folio) if raw_folio.isdigit() else c.get("physical_page", 1)
             citations_v2.append({
                 "chunk_id": f"CHUNK-{i+1:02d}",
                 "verbatim_quote": verbatim,
@@ -1101,7 +1118,7 @@ Return ONLY a valid JSON object with this exact schema:
                     "document_name": c.get("document", "fneur-16-1564680.pdf"),
                     "section": f"{c.get('section', 'Results')}{sub_path}",
                     "physical_page": c.get("physical_page", 1),
-                    "folio_page": int(str(c.get("printed_page", 1)).lstrip("0") or 1),
+                    "folio_page": folio_int,
                 }]
             })
 

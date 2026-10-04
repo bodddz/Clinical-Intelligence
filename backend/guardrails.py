@@ -42,8 +42,23 @@ class ConversationalIntentRouter:
         re.compile(r"\b(system\s+prompt|jailbreak|disregard\s+guidelines|bypass\s+safety)\b", re.IGNORECASE),
         re.compile(r"\b(pretend\s+you\s+are|act\s+as\s+a|you\s+are\s+now|roleplay\s+as)\b", re.IGNORECASE),
         re.compile(r"\b(reveal\s+(your\s+)?(system\s+instructions|prompt|secret|api\s+key))\b", re.IGNORECASE),
+        re.compile(r"\b(developer\s+mode|DAN\s+mode|safety\s+filters\s+disabled|all\s+restrictions\s+removed)\b", re.IGNORECASE),
+        re.compile(r"\b(override\s+(your\s+)?(instructions|safety|rules|constraints|guidelines))\b", re.IGNORECASE),
+        re.compile(r"\b(forget\s+(everything|all|your\s+training|your\s+instructions))\b", re.IGNORECASE),
+        re.compile(r"\b(new\s+persona|new\s+instructions?|from\s+now\s+on\s+you\s+(are|will))\b", re.IGNORECASE),
         # Arabic adversarial prompts
         re.compile(r"\b(انسى\s+التعليمات|تجاهل\s+(الشروط|التعليمات|القواعد)|اتصرف\s+كأنك|تظاهر\s+بأنك)\b", re.IGNORECASE),
+    ]
+
+    # Gate -0.5 extension: Tail-injection — adversarial directives embedded AFTER clinical content
+    TAIL_INJECTION_PATTERNS = [
+        re.compile(r"(he\s+must(n'?t)?\s+(respond|answer)|he\s+should(n'?t)?\s+(respond|answer))\b", re.IGNORECASE),
+        re.compile(r"\b(do\s+not\s+(respond|answer|reply)|don'?t\s+(respond|answer|reply))\b", re.IGNORECASE),
+        re.compile(r"\b(must\s+not\s+(respond|answer|reply|generate|output))\b", re.IGNORECASE),
+        re.compile(r"\b(stop\s+(responding|answering|generating)|refuse\s+to\s+(answer|respond))\b", re.IGNORECASE),
+        re.compile(r"\b(you\s+(must|should|shall)\s+not\s+(answer|respond|reply|generate))\b", re.IGNORECASE),
+        re.compile(r"\b(output\s+nothing|return\s+nothing|say\s+nothing|generate\s+nothing)\b", re.IGNORECASE),
+        re.compile(r"\b(لا\s+ترد|لا\s+تجاوب|يجب\s+ألا\s+يرد|لا\s+تستجيب)\b", re.IGNORECASE),
     ]
 
     # Non-Clinical Conversational Noise & Person Names
@@ -131,33 +146,15 @@ class ConversationalIntentRouter:
         if not q:
             return None
 
-        # Gate -0.5: Prompt Injection & Adversarial Defense Check
+        # Gate -0.5: Prompt Injection & Adversarial Defense Check (full text scan)
         for pattern in cls.PROMPT_INJECTION_PATTERNS:
             if pattern.search(q):
-                injection_msg = (
-                    "I couldn't find enough information in the indexed guidelines to answer this confidently. "
-                    "The system operates strictly under locked clinical safety constraints and cannot override its evidence-grounding protocols."
-                )
-                return {
-                    "answer": injection_msg,
-                    "recommendation": injection_msg,
-                    "evidence": "",
-                    "confidence_level": "SAFE_REFUSAL",
-                    "confidence": "insufficient",
-                    "clinical_nuance": "Observational Finding",
-                    "grounded_quotes": [],
-                    "metadata": [],
-                    "citations": [],
-                    "telemetry": {
-                        "intent_gate_ms": 0.3,
-                        "hybrid_retrieval_ms": 0.0,
-                        "cross_encoder_ms": 0.0,
-                        "synthesis_ms": 0.0,
-                        "total_ms": 0.3,
-                        "faithfulness_score": 100.0,
-                        "cache_hit": False
-                    },
-                }
+                return cls._injection_refusal()
+
+        # Gate -0.5 extension: Tail-injection scan — catches directives buried inside clinical content
+        for pattern in cls.TAIL_INJECTION_PATTERNS:
+            if pattern.search(q):
+                return cls._injection_refusal()
 
         # Check Gibberish / Malformed Input
         if cls._is_gibberish(q) or cls.GIBBERISH_REGEX.match(q):
@@ -166,26 +163,7 @@ class ConversationalIntentRouter:
                 "The input does not match a recognizable clinical syntax. This system searches the first-seizure cohort study (N=235) "
                 "and any uploaded epilepsy guidelines. Please rephrase your clinical inquiry with specific medical terminology."
             )
-            return {
-                "answer": gibberish_text,
-                "recommendation": gibberish_text,
-                "evidence": "",
-                "confidence_level": "SAFE_REFUSAL",
-                "confidence": "insufficient",
-                "clinical_nuance": "Observational Finding",
-                "grounded_quotes": [],
-                "metadata": [],
-                "citations": [],
-                "telemetry": {
-                    "intent_gate_ms": 0.2,
-                    "hybrid_retrieval_ms": 0.0,
-                    "cross_encoder_ms": 0.0,
-                    "synthesis_ms": 0.0,
-                    "total_ms": 0.2,
-                    "faithfulness_score": 100.0,
-                    "cache_hit": False
-                },
-            }
+            return cls._safe_refusal_response(gibberish_text, gate_ms=0.2)
 
         # Check Greetings & State of Health
         for pattern in cls.GREETING_PATTERNS:
@@ -195,26 +173,7 @@ class ConversationalIntentRouter:
                     "and international epilepsy guidelines. I am ready to evaluate seizure recurrence risks, EEG biomarkers, or ASM protocols. "
                     "How can I assist your clinical workflow?"
                 )
-                return {
-                    "answer": greeting_text,
-                    "recommendation": greeting_text,
-                    "evidence": "",
-                    "confidence_level": "HIGH_CONFIDENCE",
-                    "confidence": "high",
-                    "clinical_nuance": "Clinical Assistance",
-                    "grounded_quotes": [],
-                    "metadata": [],
-                    "citations": [],
-                    "telemetry": {
-                        "intent_gate_ms": 0.4,
-                        "hybrid_retrieval_ms": 0.0,
-                        "cross_encoder_ms": 0.0,
-                        "synthesis_ms": 0.0,
-                        "total_ms": 0.4,
-                        "faithfulness_score": 100.0,
-                        "cache_hit": True
-                    },
-                }
+                return cls._conversational_response(greeting_text)
 
         # Check Capabilities / Identity
         for pattern in cls.CAPABILITY_PATTERNS:
@@ -228,26 +187,7 @@ class ConversationalIntentRouter:
                     "• **Diagnostic Workup:** Routine EEG sensitivity, IED identification (33.6%), and MRI/CT lesion prevalence (49.3%)\n"
                     "• **ASM Treatment Protocols:** Real-world prescription rates and clinical outcomes."
                 )
-                return {
-                    "answer": cap_text,
-                    "recommendation": cap_text,
-                    "evidence": "",
-                    "confidence_level": "HIGH_CONFIDENCE",
-                    "confidence": "high",
-                    "clinical_nuance": "Clinical Assistance",
-                    "grounded_quotes": [],
-                    "metadata": [],
-                    "citations": [],
-                    "telemetry": {
-                        "intent_gate_ms": 0.4,
-                        "hybrid_retrieval_ms": 0.0,
-                        "cross_encoder_ms": 0.0,
-                        "synthesis_ms": 0.0,
-                        "total_ms": 0.4,
-                        "faithfulness_score": 100.0,
-                        "cache_hit": True
-                    },
-                }
+                return cls._conversational_response(cap_text, high_confidence=True)
 
         # Check Person Names & Casual Conversational Noise
         for pattern in cls.PERSON_OR_CASUAL_PATTERNS:
@@ -261,26 +201,7 @@ class ConversationalIntentRouter:
                     "• **Diagnostic Workup:** Routine EEG findings, IED identification (33.6%), and CT/MRI imaging abnormalities (49.3%)\n"
                     "• **Antiseizure Medication (ASM):** Immediate initiation vs. deferred therapy and prescription protocols."
                 )
-                return {
-                    "answer": guidance_msg,
-                    "recommendation": guidance_msg,
-                    "evidence": "",
-                    "confidence_level": "SAFE_REFUSAL",
-                    "confidence": "insufficient",
-                    "clinical_nuance": "Clinical Assistance",
-                    "grounded_quotes": [],
-                    "metadata": [],
-                    "citations": [],
-                    "telemetry": {
-                        "intent_gate_ms": 0.3,
-                        "hybrid_retrieval_ms": 0.0,
-                        "cross_encoder_ms": 0.0,
-                        "synthesis_ms": 0.0,
-                        "total_ms": 0.3,
-                        "faithfulness_score": 100.0,
-                        "cache_hit": True
-                    },
-                }
+                return cls._safe_refusal_response(guidance_msg, gate_ms=0.3)
 
         # Single word or very short queries lacking any clinical intent
         words = re.findall(r"\b[a-zA-Z0-9_\-\u0600-\u06FF]+\b", q)
@@ -289,28 +210,89 @@ class ConversationalIntentRouter:
                 "Hello, Doctor. I am your Clinical Decision Support Assistant for epilepsy cohorts and clinical guidelines. "
                 "The input appears to be non-clinical. Please submit a specific inquiry regarding seizure recurrence, EEG/MRI findings, or ASM protocols."
             )
-            return {
-                "answer": guidance_msg,
-                "recommendation": guidance_msg,
-                "evidence": "",
-                "confidence_level": "SAFE_REFUSAL",
-                "confidence": "insufficient",
-                "clinical_nuance": "Clinical Assistance",
-                "grounded_quotes": [],
-                "metadata": [],
-                "citations": [],
-                "telemetry": {
-                    "intent_gate_ms": 0.3,
-                    "hybrid_retrieval_ms": 0.0,
-                    "cross_encoder_ms": 0.0,
-                    "synthesis_ms": 0.0,
-                    "total_ms": 0.3,
-                    "faithfulness_score": 100.0,
-                    "cache_hit": True
-                },
-            }
+            return cls._safe_refusal_response(guidance_msg, gate_ms=0.3)
 
         return None
+
+    # ── Shared response factory helpers ────────────────────────────────────────
+
+    @classmethod
+    def _injection_refusal(cls) -> Dict[str, Any]:
+        """Standard Gate -0.5 / tail-injection refusal response (v2-compliant)."""
+        msg = (
+            "The system operates strictly under locked clinical safety constraints. "
+            "This request has been identified as a potential prompt injection or adversarial instruction "
+            "and cannot be processed. Please submit a valid clinical inquiry."
+        )
+        return cls._safe_refusal_response(msg, gate_ms=0.3)
+
+    @classmethod
+    def _safe_refusal_response(cls, message: str, gate_ms: float = 0.3) -> Dict[str, Any]:
+        """Builds a fully v2-compliant SAFE_REFUSAL response dict."""
+        return {
+            # v2 fields
+            "query_status": "OFF_TOPIC",
+            "status_explanation": "Guardrail gate triggered — query refused.",
+            "answer_markdown": f"*{message}*",
+            "clarification_questions": [],
+            "finding_type": "Out of Corpus",
+            "faithfulness_percentage": 100.0,
+            "citations_v2": [],
+            # legacy fields
+            "answer": message,
+            "recommendation": message,
+            "evidence": "",
+            "confidence_level": "SAFE_REFUSAL",
+            "confidence": "insufficient",
+            "clinical_nuance": "Observational Finding",
+            "grounded_quotes": [],
+            "metadata": [],
+            "citations": [],
+            "telemetry": {
+                "intent_gate_ms": gate_ms,
+                "hybrid_retrieval_ms": 0.0,
+                "cross_encoder_ms": 0.0,
+                "synthesis_ms": 0.0,
+                "total_ms": gate_ms,
+                "faithfulness_score": 100.0,
+                "cache_hit": False,
+            },
+        }
+
+    @classmethod
+    def _conversational_response(cls, message: str, high_confidence: bool = False) -> Dict[str, Any]:
+        """Builds a fully v2-compliant conversational (non-refusal) response dict."""
+        conf_level = "HIGH_CONFIDENCE" if high_confidence else "SAFE_REFUSAL"
+        conf = "high" if high_confidence else "insufficient"
+        return {
+            # v2 fields
+            "query_status": "ANSWERABLE",
+            "status_explanation": "Conversational intent — no retrieval required.",
+            "answer_markdown": message,
+            "clarification_questions": [],
+            "finding_type": "Observational Finding",
+            "faithfulness_percentage": 100.0,
+            "citations_v2": [],
+            # legacy fields
+            "answer": message,
+            "recommendation": message,
+            "evidence": "",
+            "confidence_level": conf_level,
+            "confidence": conf,
+            "clinical_nuance": "Clinical Assistance",
+            "grounded_quotes": [],
+            "metadata": [],
+            "citations": [],
+            "telemetry": {
+                "intent_gate_ms": 0.4,
+                "hybrid_retrieval_ms": 0.0,
+                "cross_encoder_ms": 0.0,
+                "synthesis_ms": 0.0,
+                "total_ms": 0.4,
+                "faithfulness_score": 100.0,
+                "cache_hit": True,
+            },
+        }
 
 
 class SafetyGateRouter:
@@ -347,11 +329,13 @@ class SafetyGateRouter:
 
     # Gate 0: Ambiguous Clinical Inquiries lacking cohort parameter
     AMBIGUOUS_PATTERNS = [
-        re.compile(r"^what is the treatment rate\??$", re.IGNORECASE),
-        re.compile(r"^treatment rate\??$", re.IGNORECASE),
-        re.compile(r"^what is the recurrence rate\??$", re.IGNORECASE),
-        re.compile(r"^recurrence rate\??$", re.IGNORECASE),
-        re.compile(r"^tell me about seizures\??$", re.IGNORECASE),
+        re.compile(r"^(what\s+is\s+the\s+)?treatment\s+rate\??$", re.IGNORECASE),
+        re.compile(r"^(what\s+is\s+the\s+)?recurrence\s+(rate|percentage|proportion)\??$", re.IGNORECASE),
+        re.compile(r"^(what\s+is\s+the\s+)?recurrence\s+(rate|percentage)\s+in\s+the\s+cohort\??$", re.IGNORECASE),
+        re.compile(r"^tell\s+me\s+about\s+seizures\??$", re.IGNORECASE),
+        re.compile(r"^(what\s+is\s+the\s+)?dose\s+of\s+(medication|drug|asm|aed)\??$", re.IGNORECASE),
+        re.compile(r"^(what\s+(dose|dosage)\s+was\s+(prescribed|given|used))\??$", re.IGNORECASE),
+        re.compile(r"^(what\s+(proportion|percentage|rate)\s+(of\s+)?(patients?|the\s+cohort)\s+(were|was|received|had))\??$", re.IGNORECASE),
     ]
 
     def evaluate_query(self, query: str, top_retrieval_score: float) -> Tuple[bool, str, str, str]:
@@ -362,10 +346,7 @@ class SafetyGateRouter:
         # Gate 0: Ambiguity Check
         for p in self.AMBIGUOUS_PATTERNS:
             if p.match(query.strip()):
-                return (
-                    True,
-                    "SAFE_REFUSAL",
-                    "Observational Finding",
+                ambig_msg = (
                     "I couldn't find enough information to answer this ambiguous query without cohort specification. "
                     "The indexed study investigates distinct cohorts with vastly different clinical profiles:\n\n"
                     "• **Total Cohort (N=235):** 66.4% immediate treatment (156/235), 19.4% 1-year recurrence (43/221).\n"
@@ -373,6 +354,12 @@ class SafetyGateRouter:
                     "• **Patients Without Epilepsy (PWNE, N=89, 37.9%):** 23.6% ASM for individualized reasons (21/89), 5.6% 1-year recurrence rate, "
                     "100% of recurrences occurred within ≤ 6 months (0% at 6-12 months).\n\n"
                     "Please specify whether you are querying the overall cohort (N=235), PWE cohort (N=146), or PWNE cohort (N=89)."
+                )
+                return (
+                    True,
+                    "SAFE_REFUSAL",
+                    "Observational Finding",
+                    ambig_msg,
                 )
 
         # Gate 2: Personal Injury / Trauma / Emergency / Endocrinology / Lab Panels / Out-Of-Domain Check
@@ -412,10 +399,19 @@ class SafetyGateRouter:
         Patients With Epilepsy (PWE, N=146, 62.1%, ASM 92.5%, recurrence 28.0%)
         and Patients Without Epilepsy (PWNE, N=89, 37.9%, ASM 23.6%, recurrence 5.6%).
         """
+        if not text:
+            return text
         corrected = text
-        # Guard against incorrect 100% recurrence attribution for entire cohort
-        if "PWNE" in text and "28.0%" in text and "PWE" not in text:
+        # Guard: PWNE context must not carry PWE recurrence stats
+        if "PWNE" in corrected and "28.0%" in corrected and "PWE" not in corrected:
             corrected = corrected.replace("28.0%", "5.6% (1-year recurrence for PWNE)")
-        if "PWE" in text and "23.6%" in text and "PWNE" not in text:
+        # Guard: PWE context must not carry PWNE ASM rate
+        if "PWE" in corrected and "23.6%" in corrected and "PWNE" not in corrected:
             corrected = corrected.replace("23.6%", "92.5% (immediate ASM initiation for PWE)")
+        # Guard: PWNE context must not claim 92.5% ASM rate
+        if "PWNE" in corrected and "92.5%" in corrected and "PWE" not in corrected:
+            corrected = corrected.replace("92.5%", "23.6% (individualized ASM for PWNE)")
+        # Guard: PWE context must not claim 5.6% recurrence
+        if "PWE" in corrected and "5.6%" in corrected and "PWNE" not in corrected:
+            corrected = corrected.replace("5.6%", "28.0% (1-year recurrence for PWE)")
         return corrected
